@@ -1,0 +1,34 @@
+{
+    "hide_parse": false,
+    "column_parse": 
+    {
+        "function": 
+        {
+            "rid": 2, 
+            "pattern": ["Function \\d+"]
+        },
+        "pad_name": 
+        {
+            "rid": 4,
+            "pattern": "Pad Name"
+        },
+        "ref_name": 
+        {
+            "rid": 4,
+            "pattern": "Pad Cell Name"
+        }
+    },
+    "function_group": 
+    {
+        "SDIO": 
+        {
+            "pattern": "(SDIO\\d*)_\\w+(?:\\(BS\\))",
+            "clock": ["\\w+_CLK(?:\\(BS\\))"]
+        },
+        "BMC":
+        {
+            "pattern": "^(BMC)_\\w+",
+            "clock": ["\\w+_CLK"]
+        }
+    }
+}
