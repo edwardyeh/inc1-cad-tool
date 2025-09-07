@@ -1,0 +1,49 @@
+
+=== Category:
+
+    SDIO: SDIO, SDIO2
+    BMC:  BMC
+
+=== Function:
+
+- SDIO:
+
+    SDIO_CLK(BS) O  MC13 (NVT TSIO)
+    SDIO_CMD(BS) IO MC14 (NVT TSIO)
+    SDIO_D0(BS)  IO MC15 (NVT TSIO)
+    SDIO_D1(BS)  IO MC16 (NVT TSIO)
+    SDIO_D2(BS)  IO MC17 (NVT TSIO)
+    SDIO_D3(BS)  IO MC18 (NVT TSIO)
+
+    set SDIO_PADCLK_O [get_ports {MC13}]
+    set SDIO_PORT_I   [get_ports {MC14,MC17,MC18}]
+    set SDIO_PORT_O   [get_ports {MC14,MC17,MC18}]
+
+    set SDIO_DATA_H [get_ports {MC15,MC16}]
+
+- SDIO2:
+
+    SDIO2_CLK O  MC19 (NVT TSIO)
+    SDIO2_CMD IO MC20 (NVT TSIO)
+    SDIO2_D0  IO MC21 (NVT TSIO)
+    SDIO2_D1  IO MC22 (NVT TSIO)
+    SDIO2_D2  IO MC23 (NVT TSIO)
+    SDIO2_D3  IO MC24 (NVT TSIO)
+
+    set SDIO2_PADCLK_O [get_ports {MC19}]
+    set SDIO2_PORT_I   [get_ports {MC20,MC23,MC24}]
+    set SDIO2_PORT_O   [get_ports {MC20,MC23,MC24}]
+
+    set SDIO2_DATA_H [get_ports {MC21,MC22}]
+
+- BMC:
+
+    BMC_CLK O  MC19 (NVT TSIO)
+    BMC_CS  O  MC20 (NVT TSIO)
+    BMC_DI  I  MC21 (NVT TSIO)
+    BMC_DO  O  MC22 (NVT TSIO)
+
+    set BMC_PADCLK_O [get_ports {MC19}]
+    set BMC_PORT_I   [get_ports {MC21}]
+    set BMC_PORT_O   [get_ports {MC20,MC22}]
+

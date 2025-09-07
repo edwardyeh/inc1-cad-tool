@@ -1,7 +1,8 @@
 {
     "hide_parse": false,
-    "column_parse": 
+    "table_parse": 
     {
+        "active_ws": "Pinmux",
         "function": 
         {
             "rid": 2, 
@@ -22,13 +23,22 @@
     {
         "SDIO": 
         {
-            "pattern": "(SDIO\\d*)_\\w+(?:\\(BS\\))",
-            "clock": ["\\w+_CLK(?:\\(BS\\))"]
+            "pattern": "(SDIO\\d*)_\\w+(?:\\(BS\\))*",
+            "clock": ["\\w+_CLK(?:\\(BS\\))*"],
+            "custom": 
+            {
+                "DATA_H": "SDIO\\d*_D(?:0|1)(?:\\(BS\\))*"
+            }
         },
         "BMC":
         {
             "pattern": "^(BMC)_\\w+",
-            "clock": ["\\w+_CLK"]
+            "clock": ["\\w+_CLK"],
+            "custom": {}
         }
-    }
+    },
+    "function_ignore":
+    [
+        "FUNC_\\w+"
+    ]
 }

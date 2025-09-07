@@ -1,0 +1,1143 @@
+let SessionLoad = 1
+if &cp | set nocp | endif
+let s:cpo_save=&cpo
+set cpo&vim
+inoremap <expr> <C-N> pumvisible() ? "\" : "\"
+inoremap <expr> <Down> pumvisible() ? "\" : "\<Down>"
+inoremap <expr> <C-P> pumvisible() ? "\" : "\"
+inoremap <expr> <Up> pumvisible() ? "\" : "\<Up>"
+imap <Nul> <C-Space>
+map! <S-Insert> <MiddleMouse>
+inoremap <silent> <Plug>NERDCommenterInsert :call nerdcommenter#Comment('i', "Insert")
+imap <C-G>S <Plug>ISurround
+imap <C-G>s <Plug>Isurround
+imap <C-S> <Plug>Isurround
+inoremap <silent> <Plug>(fzf-maps-i) :call fzf#vim#maps('i', 0)
+inoremap <expr> <Plug>(fzf-complete-buffer-line) fzf#vim#complete#buffer_line()
+inoremap <expr> <Plug>(fzf-complete-line) fzf#vim#complete#line()
+inoremap <expr> <Plug>(fzf-complete-file-ag) fzf#vim#complete#path('ag -l -g ""')
+inoremap <expr> <Plug>(fzf-complete-file) fzf#vim#complete#path("find . -path '*/\.*' -prune -o -type f -print -o -type l -print | sed 's:^..::'")
+inoremap <expr> <Plug>(fzf-complete-path) fzf#vim#complete#path("find . -path '*/\.*' -prune -o -print | sed '1d;s:^..::'")
+inoremap <expr> <Plug>(fzf-complete-word) fzf#vim#complete#word()
+nnoremap  :YcmCompleter GoToDefinition
+nnoremap <NL> :YcmCompleter GoToDefinitionElseDeclaration
+nnoremap  :YcmCompleter GoToDeclaration
+tnoremap  
+tnoremap  
+nmap d :cs find d =expand("<cword>")	
+nmap i :cs find i ^=expand("<cfile>")$
+nmap f :cs find f =expand("<cfile>")	
+nmap e :cs find e =expand("<cword>")	
+nmap t :cs find t =expand("<cword>")	
+nmap c :cs find c =expand("<cword>")	
+nmap g :cs find g =expand("<cword>")	
+nmap s :cs find s =expand("<cword>")	
+nmap d :vert scs find d =expand("<cword>")
+nmap i :vert scs find i ^=expand("<cfile>")$	
+nmap f :vert scs find f =expand("<cfile>")	
+nmap e :vert scs find e =expand("<cword>")
+nmap t :vert scs find t =expand("<cword>")
+nmap c :vert scs find c =expand("<cword>")
+nmap g :vert scs find g =expand("<cword>")
+nmap s :vert scs find s =expand("<cword>")
+nmap d :scs find d =expand("<cword>")	
+nmap i :scs find i ^=expand("<cfile>")$	
+nmap f :scs find f =expand("<cfile>")	
+nmap e :scs find e =expand("<cword>")	
+nmap t :scs find t =expand("<cword>")	
+nmap c :scs find c =expand("<cword>")	
+nmap g :scs find g =expand("<cword>")	
+nmap s :scs find s =expand("<cword>")	
+map ,. :CtrlP .
+xmap S <Plug>VSurround
+vmap [% [%m'gv``
+nnoremap \d :YcmShowDetailedDiagnostic
+xmap \cu <Plug>NERDCommenterUncomment
+xmap \cb <Plug>NERDCommenterAlignBoth
+nmap \cb <Plug>NERDCommenterAlignBoth
+xmap \cl <Plug>NERDCommenterAlignLeft
+nmap \cA <Plug>NERDCommenterAppend
+xmap \cy <Plug>NERDCommenterYank
+nmap \cy <Plug>NERDCommenterYank
+xmap \cs <Plug>NERDCommenterSexy
+xmap \ci <Plug>NERDCommenterInvert
+nmap \c$ <Plug>NERDCommenterToEOL
+xmap \cn <Plug>NERDCommenterNested
+xmap \cm <Plug>NERDCommenterMinimal
+nmap \cm <Plug>NERDCommenterMinimal
+xmap \c  <Plug>NERDCommenterToggle
+nmap \c  <Plug>NERDCommenterToggle
+xmap \cc <Plug>NERDCommenterComment
+nmap <silent> \cv <Plug>VCSVimDiff
+nmap \cu <Plug>NERDCommenterUncomment
+nmap <silent> \cU <Plug>VCSUnlock
+nmap \cs <Plug>NERDCommenterSexy
+nmap <silent> \cr <Plug>VCSReview
+nmap <silent> \cq <Plug>VCSRevert
+nmap \cn <Plug>NERDCommenterNested
+nmap <silent> \cN <Plug>VCSSplitAnnotate
+nmap \cl <Plug>NERDCommenterAlignLeft
+nmap <silent> \cL <Plug>VCSLock
+nmap \ci <Plug>NERDCommenterInvert
+nmap <silent> \cg <Plug>VCSGotoOriginal
+nmap <silent> \cG <Plug>VCSClearAndGotoOriginal
+nmap <silent> \cd <Plug>VCSDiff
+nmap <silent> \cD <Plug>VCSDelete
+nmap \cc <Plug>NERDCommenterComment
+nmap \ca <Plug>NERDCommenterAltDelims
+nmap \it :IndentLinesToggle
+nmap \D <Plug>(YCMHover)
+nnoremap \fc :Commits
+nnoremap \fa :Ag
+nnoremap \ft :Tags
+nnoremap \f? :GFiles?
+nnoremap \fg :GFiles
+nnoremap \ff :Files
+nnoremap \fb :BLines
+nnoremap \fl :Lines
+nmap \gt :GitGutterToggle
+map \be :MBEToggle
+nmap \t :TagbarToggle
+nmap \e :NERDTreeToggle
+nmap \wt :call IDEToggle()
+vmap ]% ]%m'gv``
+vmap a% [%v]%
+nmap cS <Plug>CSurround
+nmap cs <Plug>Csurround
+nmap ds <Plug>Dsurround
+nmap fs Hh
+xmap gx <Plug>NetrwBrowseXVis
+nmap gx <Plug>NetrwBrowseX
+xmap gS <Plug>VgSurround
+nmap mg <Plug>BookmarkMoveToLine
+nmap mjj <Plug>BookmarkMoveDown
+nmap mkk <Plug>BookmarkMoveUp
+nmap mx <Plug>BookmarkClearAll
+nmap mc <Plug>BookmarkClear
+nmap mp <Plug>BookmarkPrev
+nmap mn <Plug>BookmarkNext
+nmap mi <Plug>BookmarkAnnotate
+nmap mm <Plug>BookmarkToggle
+nmap ma <Plug>BookmarkShowAll
+nmap ts Hhj
+nmap ySS <Plug>YSsurround
+nmap ySs <Plug>YSsurround
+nmap yss <Plug>Yssurround
+nmap yS <Plug>YSurround
+nmap ys <Plug>Ysurround
+nnoremap <silent> <Plug>(YCMTypeHierarchy) <Cmd>call youcompleteme#hierarchy#StartRequest( 'type' )
+nnoremap <silent> <Plug>(YCMCallHierarchy) <Cmd>call youcompleteme#hierarchy#StartRequest( 'call' )
+nnoremap <silent> <Plug>(YCMFindSymbolInWorkspace) :call youcompleteme#finder#FindSymbol( 'workspace' )
+nnoremap <silent> <Plug>(YCMFindSymbolInDocument) :call youcompleteme#finder#FindSymbol( 'document' )
+map <S-Insert> <MiddleMouse>
+xnoremap <silent> <Plug>NetrwBrowseXVis :call netrw#BrowseXVis()
+nnoremap <silent> <Plug>NetrwBrowseX :call netrw#BrowseX(netrw#GX(),netrw#CheckIfRemote(netrw#GX()))
+nnoremap <silent> <Plug>BookmarkMoveToLine :BookmarkMoveToLine v:count
+nnoremap <silent> <Plug>BookmarkMoveDown :BookmarkMoveDown v:count
+nnoremap <silent> <Plug>BookmarkMoveUp :BookmarkMoveUp v:count
+nnoremap <silent> <Plug>BookmarkClearAll :BookmarkClearAll
+nnoremap <silent> <Plug>BookmarkClear :BookmarkClear
+nnoremap <silent> <Plug>BookmarkPrev :BookmarkPrev
+nnoremap <silent> <Plug>BookmarkNext :BookmarkNext
+nnoremap <silent> <Plug>BookmarkAnnotate :BookmarkAnnotate
+nnoremap <silent> <Plug>BookmarkToggle :BookmarkToggle
+nnoremap <silent> <Plug>BookmarkShowAll :BookmarkShowAll
+nnoremap <Plug>NERDCommenterAltDelims :call nerdcommenter#SwitchToAlternativeDelimiters(1)
+xnoremap <silent> <Plug>NERDCommenterUncomment :call nerdcommenter#Comment("x", "Uncomment")
+nnoremap <silent> <Plug>NERDCommenterUncomment :call nerdcommenter#Comment("n", "Uncomment")
+xnoremap <silent> <Plug>NERDCommenterAlignBoth :call nerdcommenter#Comment("x", "AlignBoth")
+nnoremap <silent> <Plug>NERDCommenterAlignBoth :call nerdcommenter#Comment("n", "AlignBoth")
+xnoremap <silent> <Plug>NERDCommenterAlignLeft :call nerdcommenter#Comment("x", "AlignLeft")
+nnoremap <silent> <Plug>NERDCommenterAlignLeft :call nerdcommenter#Comment("n", "AlignLeft")
+nnoremap <silent> <Plug>NERDCommenterAppend :call nerdcommenter#Comment("n", "Append")
+xnoremap <silent> <Plug>NERDCommenterYank :call nerdcommenter#Comment("x", "Yank")
+nnoremap <silent> <Plug>NERDCommenterYank :call nerdcommenter#Comment("n", "Yank")
+xnoremap <silent> <Plug>NERDCommenterSexy :call nerdcommenter#Comment("x", "Sexy")
+nnoremap <silent> <Plug>NERDCommenterSexy :call nerdcommenter#Comment("n", "Sexy")
+xnoremap <silent> <Plug>NERDCommenterInvert :call nerdcommenter#Comment("x", "Invert")
+nnoremap <silent> <Plug>NERDCommenterInvert :call nerdcommenter#Comment("n", "Invert")
+nnoremap <silent> <Plug>NERDCommenterToEOL :call nerdcommenter#Comment("n", "ToEOL")
+xnoremap <silent> <Plug>NERDCommenterNested :call nerdcommenter#Comment("x", "Nested")
+nnoremap <silent> <Plug>NERDCommenterNested :call nerdcommenter#Comment("n", "Nested")
+xnoremap <silent> <Plug>NERDCommenterMinimal :call nerdcommenter#Comment("x", "Minimal")
+nnoremap <silent> <Plug>NERDCommenterMinimal :call nerdcommenter#Comment("n", "Minimal")
+xnoremap <silent> <Plug>NERDCommenterToggle :call nerdcommenter#Comment("x", "Toggle")
+nnoremap <silent> <Plug>NERDCommenterToggle :call nerdcommenter#Comment("n", "Toggle")
+xnoremap <silent> <Plug>NERDCommenterComment :call nerdcommenter#Comment("x", "Comment")
+nnoremap <silent> <Plug>NERDCommenterComment :call nerdcommenter#Comment("n", "Comment")
+nnoremap <silent> <Plug>SurroundRepeat .
+onoremap <silent> <Plug>(fzf-maps-o) :call fzf#vim#maps('o', 0)
+xnoremap <silent> <Plug>(fzf-maps-x) :call fzf#vim#maps('x', 0)
+nnoremap <silent> <Plug>(fzf-maps-n) :call fzf#vim#maps('n', 0)
+tnoremap <silent> <Plug>(fzf-normal) 
+tnoremap <silent> <Plug>(fzf-insert) i
+nnoremap <silent> <Plug>(fzf-normal) <Nop>
+nnoremap <silent> <Plug>(fzf-insert) i
+nmap <C-]><C-]>d :vert scs find d =expand("<cword>")
+nmap <C-]><C-]>i :vert scs find i ^=expand("<cfile>")$	
+nmap <C-]><C-]>f :vert scs find f =expand("<cfile>")	
+nmap <C-]><C-]>e :vert scs find e =expand("<cword>")
+nmap <C-]><C-]>t :vert scs find t =expand("<cword>")
+nmap <C-]><C-]>c :vert scs find c =expand("<cword>")
+nmap <C-]><C-]>g :vert scs find g =expand("<cword>")
+nmap <C-]><C-]>s :vert scs find s =expand("<cword>")
+nmap <C-]>d :scs find d =expand("<cword>")	
+nmap <C-]>i :scs find i ^=expand("<cfile>")$	
+nmap <C-]>f :scs find f =expand("<cfile>")	
+nmap <C-]>e :scs find e =expand("<cword>")	
+nmap <C-]>t :scs find t =expand("<cword>")	
+nmap <C-]>c :scs find c =expand("<cword>")	
+nmap <C-]>g :scs find g =expand("<cword>")	
+nmap <C-]>s :scs find s =expand("<cword>")	
+nmap <C-Bslash>d :cs find d =expand("<cword>")	
+nmap <C-Bslash>i :cs find i ^=expand("<cfile>")$
+nmap <C-Bslash>f :cs find f =expand("<cfile>")	
+nmap <C-Bslash>e :cs find e =expand("<cword>")	
+nmap <C-Bslash>t :cs find t =expand("<cword>")	
+nmap <C-Bslash>c :cs find c =expand("<cword>")	
+nmap <C-Bslash>g :cs find g =expand("<cword>")	
+nmap <C-Bslash>s :cs find s =expand("<cword>")	
+nnoremap <silent> <Plug>VCSVimDiff :VCSVimDiff
+nnoremap <silent> <Plug>VCSUpdate :VCSUpdate
+nnoremap <silent> <Plug>VCSUnlock :VCSUnlock
+nnoremap <silent> <Plug>VCSStatus :VCSStatus
+nnoremap <silent> <Plug>VCSSplitAnnotate :VCSAnnotate!
+nnoremap <silent> <Plug>VCSReview :VCSReview
+nnoremap <silent> <Plug>VCSRevert :VCSRevert
+nnoremap <silent> <Plug>VCSLog :VCSLog
+nnoremap <silent> <Plug>VCSLock :VCSLock
+nnoremap <silent> <Plug>VCSInfo :VCSInfo
+nnoremap <silent> <Plug>VCSClearAndGotoOriginal :VCSGotoOriginal!
+nnoremap <silent> <Plug>VCSGotoOriginal :VCSGotoOriginal
+nnoremap <silent> <Plug>VCSDiff :VCSDiff
+nnoremap <silent> <Plug>VCSDelete :VCSDelete
+nnoremap <silent> <Plug>VCSCommit :VCSCommit
+nnoremap <silent> <Plug>VCSAnnotate :VCSAnnotate
+nnoremap <silent> <Plug>VCSAdd :VCSAdd
+nnoremap <silent> <Plug>GitGutterPreviewHunk :call gitgutter#utility#warn('Please change your map <Plug>GitGutterPreviewHunk to <Plug>(GitGutterPreviewHunk)')
+nnoremap <silent> <Plug>(GitGutterPreviewHunk) :GitGutterPreviewHunk
+nnoremap <silent> <Plug>GitGutterUndoHunk :call gitgutter#utility#warn('Please change your map <Plug>GitGutterUndoHunk to <Plug>(GitGutterUndoHunk)')
+nnoremap <silent> <Plug>(GitGutterUndoHunk) :GitGutterUndoHunk
+nnoremap <silent> <Plug>GitGutterStageHunk :call gitgutter#utility#warn('Please change your map <Plug>GitGutterStageHunk to <Plug>(GitGutterStageHunk)')
+nnoremap <silent> <Plug>(GitGutterStageHunk) :GitGutterStageHunk
+xnoremap <silent> <Plug>GitGutterStageHunk :call gitgutter#utility#warn('Please change your map <Plug>GitGutterStageHunk to <Plug>(GitGutterStageHunk)')
+xnoremap <silent> <Plug>(GitGutterStageHunk) :GitGutterStageHunk
+nnoremap <silent> <expr> <Plug>GitGutterPrevHunk &diff ? '[c' : ":\call gitgutter#utility#warn('Please change your map \<Plug>GitGutterPrevHunk to \<Plug>(GitGutterPrevHunk)')\"
+nnoremap <silent> <expr> <Plug>(GitGutterPrevHunk) &diff ? '[c' : ":\execute v:count1 . 'GitGutterPrevHunk'\"
+nnoremap <silent> <expr> <Plug>GitGutterNextHunk &diff ? ']c' : ":\call gitgutter#utility#warn('Please change your map \<Plug>GitGutterNextHunk to \<Plug>(GitGutterNextHunk)')\"
+nnoremap <silent> <expr> <Plug>(GitGutterNextHunk) &diff ? ']c' : ":\execute v:count1 . 'GitGutterNextHunk'\"
+xnoremap <silent> <Plug>(GitGutterTextObjectOuterVisual) :call gitgutter#hunk#text_object(0)
+xnoremap <silent> <Plug>(GitGutterTextObjectInnerVisual) :call gitgutter#hunk#text_object(1)
+onoremap <silent> <Plug>(GitGutterTextObjectOuterPending) :call gitgutter#hunk#text_object(0)
+onoremap <silent> <Plug>(GitGutterTextObjectInnerPending) :call gitgutter#hunk#text_object(1)
+nnoremap <C-J> :YcmCompleter GoToDefinitionElseDeclaration
+nnoremap <C-H> :YcmCompleter GoToDefinition
+nnoremap <C-K> :YcmCompleter GoToDeclaration
+tnoremap <C-V> 
+imap S <Plug>ISurround
+imap s <Plug>Isurround
+inoremap <expr>  pumvisible() ? "\" : "\"
+inoremap <expr>  pumvisible() ? "\" : "\"
+imap  <Plug>Isurround
+let &cpo=s:cpo_save
+unlet s:cpo_save
+set autoindent
+set background=dark
+set backspace=2
+set backupdir=~/.vim/backup//
+set belloff=all
+set completeopt=menuone
+set cpoptions=aAceFsB
+set cscopequickfix=s-,c-,d-,i-,t-,e-
+set cscopetag
+set cscopeverbose
+set directory=~/.vim/swap//
+set expandtab
+set fileencodings=ucs-bom,utf-8,default,latin1
+set guifont=DejaVu\ Sans\ Mono\ 10
+set guitablabel=%!TabooGuiTabTitle()
+set helplang=en
+set hlsearch
+set incsearch
+set laststatus=2
+set listchars=tab:▷۰,trail:۰,eol:⌋
+set mouse=a
+set printoptions=paper:a4
+set ruler
+set runtimepath=~/.vim,~/.vim/plugged/nerdtree,~/.vim/plugged/minibufexpl.vim,~/.vim/plugged/lightline.vim,~/.vim/plugged/vim-gitgutter,~/.vim/plugged/taboo.vim,~/.vim/plugged/vcscommand.vim,~/.vim/plugged/ctags.vim,~/.vim/plugged/cscope_maps,~/.fzf,~/.vim/plugged/fzf.vim,~/.vim/plugged/matchit.zip,~/.vim/plugged/vim-indent-object,~/.vim/plugged/vim-surround,~/.vim/plugged/tabular,~/.vim/plugged/nerdcommenter,~/.vim/plugged/YouCompleteMe,~/.vim/plugged/vim-bookmarks,~/.vim/plugged/indentLine,/var/lib/vim/addons,/etc/vim,/usr/share/vim/vimfiles,/usr/share/vim/vim91,/usr/share/vim/vimfiles/after,/etc/vim/after,/var/lib/vim/addons/after,~/.vim/plugged/tabular/after,~/.vim/plugged/indentLine/after,~/.vim/after
+set sessionoptions=blank,buffers,folds,help,options,tabpages,winsize,terminal,sesdir
+set shiftwidth=4
+set shortmess=filnxtToOSc
+set noshowmode
+set softtabstop=4
+set suffixes=.bak,~,.swp,.o,.info,.aux,.log,.dvi,.bbl,.blg,.brf,.cb,.ind,.idx,.ilg,.inx,.out,.toc
+set tabline=%!TabooTabline()
+set tabstop=4
+set termencoding=utf-8
+set undodir=~/.vim/undo//
+set updatetime=500
+set wildignore=*.pyc
+set window=59
+let s:so_save = &g:so | let s:siso_save = &g:siso | setg so=0 siso=0 | setl so=-1 siso=-1
+let v:this_session=expand("<sfile>:p")
+silent only
+silent tabonly
+exe "cd " . escape(expand("<sfile>:p:h"), ' ')
+if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''
+  let s:wipebuf = bufnr('%')
+endif
+if &shortmess =~ 'A'
+  set shortmess=aoOA
+else
+  set shortmess=aoO
+endif
+badd +183 pinmux_analysis.py
+badd +1 sample/pinmux.json
+badd +1 /mnt/DATA_DISK/Workspace/10_Project/01_SW/00_Python/eda_aid_tool/pt_ana_ts.py
+badd +1 /mnt/DATA_DISK/Workspace/10_Project/01_SW/00_Python/eda_aid_tool/pt_ana_cons.py
+badd +188 /mnt/DATA_DISK/Workspace/10_Project/01_SW/00_Python/eda_aid_tool/utils/primetime_cons.py
+badd +1 /mnt/DATA_DISK/Workspace/10_Project/01_SW/00_Python/progparser/progparser.py
+badd +80 /mnt/DATA_DISK/Workspace/10_Project/01_SW/00_Python/eda_aid_tool/utils/primetime_ts.py
+argglobal
+%argdel
+$argadd /mnt/DATA_DISK/Workspace/10_Project/01_SW/00_Python/ivot-cad-tool/pinmux_analysis.py
+set stal=2
+tabnew +setlocal\ bufhidden=wipe
+tabnew +setlocal\ bufhidden=wipe
+tabrewind
+edit sample/pinmux.json
+let s:save_splitbelow = &splitbelow
+let s:save_splitright = &splitright
+set splitbelow splitright
+wincmd _ | wincmd |
+vsplit
+1wincmd h
+wincmd w
+wincmd _ | wincmd |
+split
+1wincmd k
+wincmd w
+let &splitbelow = s:save_splitbelow
+let &splitright = s:save_splitright
+wincmd t
+let s:save_winminheight = &winminheight
+let s:save_winminwidth = &winminwidth
+set winminheight=0
+set winheight=1
+set winminwidth=0
+set winwidth=1
+exe 'vert 1resize ' . ((&columns * 106 + 117) / 235)
+exe '2resize ' . ((&lines * 22 + 30) / 60)
+exe 'vert 2resize ' . ((&columns * 128 + 117) / 235)
+exe '3resize ' . ((&lines * 35 + 30) / 60)
+exe 'vert 3resize ' . ((&columns * 128 + 117) / 235)
+argglobal
+let s:cpo_save=&cpo
+set cpo&vim
+nmap <buffer> [c <Plug>(GitGutterPrevHunk)
+nmap <buffer> \hp <Plug>(GitGutterPreviewHunk)
+nmap <buffer> \hu <Plug>(GitGutterUndoHunk)
+nmap <buffer> \hs <Plug>(GitGutterStageHunk)
+xmap <buffer> \hs <Plug>(GitGutterStageHunk)
+nmap <buffer> ]c <Plug>(GitGutterNextHunk)
+xmap <buffer> ac <Plug>(GitGutterTextObjectOuterVisual)
+omap <buffer> ac <Plug>(GitGutterTextObjectOuterPending)
+xmap <buffer> ic <Plug>(GitGutterTextObjectInnerVisual)
+omap <buffer> ic <Plug>(GitGutterTextObjectInnerPending)
+let &cpo=s:cpo_save
+unlet s:cpo_save
+setlocal keymap=
+setlocal noarabic
+setlocal autoindent
+setlocal backupcopy=
+setlocal balloonexpr=
+setlocal nobinary
+setlocal nobreakindent
+setlocal breakindentopt=
+setlocal bufhidden=
+setlocal buflisted
+setlocal buftype=
+setlocal nocindent
+setlocal cinkeys=0{,0},0),0],:,0#,!^F,o,O,e
+setlocal cinoptions=
+setlocal cinscopedecls=public,protected,private
+setlocal cinwords=if,else,while,do,for,switch
+set colorcolumn=80
+setlocal colorcolumn=80
+setlocal comments=
+setlocal commentstring=
+setlocal complete=.,w,b,u,t,i
+setlocal completefunc=
+setlocal concealcursor=inc
+setlocal conceallevel=2
+setlocal nocopyindent
+setlocal cryptmethod=
+setlocal nocursorbind
+setlocal nocursorcolumn
+set cursorline
+setlocal cursorline
+setlocal cursorlineopt=both
+setlocal define=
+setlocal dictionary=
+setlocal nodiff
+setlocal equalprg=
+setlocal errorformat=
+setlocal expandtab
+if &filetype != 'json'
+setlocal filetype=json
+endif
+setlocal fillchars=
+setlocal fixendofline
+setlocal foldcolumn=0
+setlocal foldenable
+setlocal foldexpr=0
+setlocal foldignore=#
+setlocal foldlevel=0
+setlocal foldmarker={{{,}}}
+set foldmethod=marker
+setlocal foldmethod=marker
+setlocal foldminlines=1
+setlocal foldnestmax=20
+setlocal foldtext=foldtext()
+setlocal formatexpr=
+setlocal formatlistpat=^\\s*\\d\\+[\\]:.)}\\t\ ]\\s*
+setlocal formatoptions=cq
+setlocal formatprg=
+setlocal grepprg=
+setlocal iminsert=0
+setlocal imsearch=-1
+setlocal include=
+setlocal includeexpr=
+setlocal indentexpr=GetJSONIndent(v:lnum)
+setlocal indentkeys=0{,0},0),0[,0],!^F,o,O,e
+setlocal noinfercase
+setlocal iskeyword=@,48-57,_,192-255
+setlocal keywordprg=
+setlocal nolinebreak
+setlocal nolisp
+setlocal lispoptions=
+setlocal lispwords=
+setlocal nolist
+setlocal listchars=
+setlocal makeencoding=
+setlocal makeprg=
+setlocal matchpairs=(:),{:},[:]
+setlocal modeline
+setlocal modifiable
+setlocal nrformats=bin,octal,hex
+set number
+setlocal number
+setlocal numberwidth=4
+setlocal omnifunc=
+setlocal path=
+setlocal nopreserveindent
+setlocal nopreviewwindow
+setlocal quoteescape=\\
+setlocal noreadonly
+setlocal norelativenumber
+setlocal norightleft
+setlocal rightleftcmd=search
+setlocal noscrollbind
+setlocal scrolloff=-1
+setlocal shiftwidth=4
+setlocal noshortname
+setlocal showbreak=
+setlocal sidescrolloff=-1
+setlocal signcolumn=auto
+setlocal nosmartindent
+setlocal nosmoothscroll
+setlocal softtabstop=4
+setlocal nospell
+setlocal spellcapcheck=[.?!]\\_[\\])'\"\	\ ]\\+
+setlocal spellfile=
+setlocal spelllang=en
+setlocal spelloptions=
+setlocal statusline=%{lightline#link()}%#LightlineLeft_inactive_0#%(\ %R\ %)%{(&readonly)&&(1||(&modified||!&modifiable))?\"|\":\"\"}%(\ %t\ %)%{(&modified||!&modifiable)?\"|\":\"\"}%(\ %M\ %)%#LightlineLeft_inactive_0_1#%#LightlineMiddle_inactive#%=%#LightlineRight_inactive_2_3#%#LightlineRight_inactive_2#%(\ %{&ff}\ %)%{1||1?\"|\":\"\"}%(\ %{&fenc!=#\"\"?&fenc:&enc}\ %)%{1?\"|\":\"\"}%(\ %{&ft!=#\"\"?&ft:\"no\ ft\"}\ %)%#LightlineRight_inactive_1_2#%#LightlineRight_inactive_1#%(\ %3p%%\ %)%#LightlineRight_inactive_0_1#%#LightlineRight_inactive_0#%(\ %3l:%-2c\ %)
+setlocal suffixesadd=
+setlocal swapfile
+setlocal synmaxcol=3000
+if &syntax != 'json'
+setlocal syntax=json
+endif
+setlocal tabstop=4
+setlocal tagcase=
+setlocal tagfunc=
+setlocal tags=
+setlocal termwinkey=
+setlocal termwinscroll=10000
+setlocal termwinsize=
+setlocal textwidth=0
+setlocal thesaurus=
+setlocal thesaurusfunc=
+setlocal noundofile
+setlocal undolevels=-123456
+setlocal varsofttabstop=
+setlocal vartabstop=
+setlocal virtualedit=
+setlocal wincolor=
+setlocal nowinfixheight
+setlocal nowinfixwidth
+set nowrap
+setlocal nowrap
+setlocal wrapmargin=0
+let s:l = 27 - ((26 * winheight(0) + 29) / 58)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 27
+normal! 044|
+wincmd w
+argglobal
+if bufexists(fnamemodify("pinmux_analysis.py", ":p")) | buffer pinmux_analysis.py | else | edit pinmux_analysis.py | endif
+balt sample/pinmux.json
+let s:cpo_save=&cpo
+set cpo&vim
+nmap <buffer> [c <Plug>(GitGutterPrevHunk)
+nmap <buffer> \hp <Plug>(GitGutterPreviewHunk)
+nmap <buffer> \hu <Plug>(GitGutterUndoHunk)
+nmap <buffer> \hs <Plug>(GitGutterStageHunk)
+xmap <buffer> \hs <Plug>(GitGutterStageHunk)
+nmap <buffer> ]c <Plug>(GitGutterNextHunk)
+xmap <buffer> ac <Plug>(GitGutterTextObjectOuterVisual)
+omap <buffer> ac <Plug>(GitGutterTextObjectOuterPending)
+xmap <buffer> ic <Plug>(GitGutterTextObjectInnerVisual)
+omap <buffer> ic <Plug>(GitGutterTextObjectInnerPending)
+let &cpo=s:cpo_save
+unlet s:cpo_save
+setlocal keymap=
+setlocal noarabic
+setlocal autoindent
+setlocal backupcopy=
+setlocal balloonexpr=
+setlocal nobinary
+setlocal nobreakindent
+setlocal breakindentopt=
+setlocal bufhidden=
+setlocal buflisted
+setlocal buftype=
+setlocal nocindent
+setlocal cinkeys=0{,0},0),0],:,!^F,o,O,e
+setlocal cinoptions=
+setlocal cinscopedecls=public,protected,private
+setlocal cinwords=if,else,while,do,for,switch
+set colorcolumn=80
+setlocal colorcolumn=80
+setlocal comments=b:#,fb:-
+setlocal commentstring=#\ %s
+setlocal complete=.,w,b,u,t,i
+setlocal completefunc=
+setlocal concealcursor=inc
+setlocal conceallevel=2
+setlocal nocopyindent
+setlocal cryptmethod=
+setlocal nocursorbind
+setlocal nocursorcolumn
+set cursorline
+setlocal cursorline
+setlocal cursorlineopt=both
+setlocal define=^\\s*\\(def\\|class\\)
+setlocal dictionary=
+setlocal nodiff
+setlocal equalprg=
+setlocal errorformat=
+setlocal expandtab
+if &filetype != 'python'
+setlocal filetype=python
+endif
+setlocal fillchars=
+setlocal fixendofline
+setlocal foldcolumn=0
+setlocal foldenable
+setlocal foldexpr=0
+setlocal foldignore=#
+setlocal foldlevel=0
+setlocal foldmarker={{{,}}}
+set foldmethod=marker
+setlocal foldmethod=marker
+setlocal foldminlines=1
+setlocal foldnestmax=20
+setlocal foldtext=foldtext()
+setlocal formatexpr=
+setlocal formatlistpat=^\\s*\\d\\+[\\]:.)}\\t\ ]\\s*
+setlocal formatoptions=tcq
+setlocal formatprg=
+setlocal grepprg=
+setlocal iminsert=0
+setlocal imsearch=-1
+setlocal include=^\\s*\\(from\\|import\\)
+setlocal includeexpr=substitute(substitute(substitute(v:fname,b:grandparent_match,b:grandparent_sub,''),b:parent_match,b:parent_sub,''),b:child_match,b:child_sub,'g')
+setlocal indentexpr=python#GetIndent(v:lnum)
+setlocal indentkeys=0{,0},0),0],:,!^F,o,O,e,<:>,=elif,=except
+setlocal noinfercase
+setlocal iskeyword=@,48-57,_,192-255
+setlocal keywordprg=python3\ -m\ pydoc
+setlocal nolinebreak
+setlocal nolisp
+setlocal lispoptions=
+setlocal lispwords=
+setlocal nolist
+setlocal listchars=
+setlocal makeencoding=
+setlocal makeprg=
+setlocal matchpairs=(:),{:},[:]
+setlocal modeline
+setlocal modifiable
+setlocal nrformats=bin,octal,hex
+set number
+setlocal number
+setlocal numberwidth=4
+setlocal omnifunc=python3complete#Complete
+setlocal path=
+setlocal nopreserveindent
+setlocal nopreviewwindow
+setlocal quoteescape=\\
+setlocal noreadonly
+setlocal norelativenumber
+setlocal norightleft
+setlocal rightleftcmd=search
+setlocal noscrollbind
+setlocal scrolloff=-1
+setlocal shiftwidth=4
+setlocal noshortname
+setlocal showbreak=
+setlocal sidescrolloff=-1
+setlocal signcolumn=auto
+setlocal nosmartindent
+setlocal nosmoothscroll
+setlocal softtabstop=4
+setlocal nospell
+setlocal spellcapcheck=[.?!]\\_[\\])'\"\	\ ]\\+
+setlocal spellfile=
+setlocal spelllang=en
+setlocal spelloptions=
+setlocal statusline=%{lightline#link()}%#LightlineLeft_inactive_0#%(\ %R\ %)%{(&readonly)&&(1||(&modified||!&modifiable))?\"|\":\"\"}%(\ %t\ %)%{(&modified||!&modifiable)?\"|\":\"\"}%(\ %M\ %)%#LightlineLeft_inactive_0_1#%#LightlineMiddle_inactive#%=%#LightlineRight_inactive_2_3#%#LightlineRight_inactive_2#%(\ %{&ff}\ %)%{1||1?\"|\":\"\"}%(\ %{&fenc!=#\"\"?&fenc:&enc}\ %)%{1?\"|\":\"\"}%(\ %{&ft!=#\"\"?&ft:\"no\ ft\"}\ %)%#LightlineRight_inactive_1_2#%#LightlineRight_inactive_1#%(\ %3p%%\ %)%#LightlineRight_inactive_0_1#%#LightlineRight_inactive_0#%(\ %3l:%-2c\ %)
+setlocal suffixesadd=.py
+setlocal swapfile
+setlocal synmaxcol=3000
+if &syntax != 'python'
+setlocal syntax=python
+endif
+setlocal tabstop=4
+setlocal tagcase=
+setlocal tagfunc=
+setlocal tags=
+setlocal termwinkey=
+setlocal termwinscroll=10000
+setlocal termwinsize=
+setlocal textwidth=0
+setlocal thesaurus=
+setlocal thesaurusfunc=
+setlocal noundofile
+setlocal undolevels=-123456
+setlocal varsofttabstop=
+setlocal vartabstop=
+setlocal virtualedit=
+setlocal wincolor=
+setlocal nowinfixheight
+setlocal nowinfixwidth
+set nowrap
+setlocal nowrap
+setlocal wrapmargin=0
+let s:l = 106 - ((13 * winheight(0) + 11) / 22)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 106
+normal! 023|
+wincmd w
+argglobal
+if bufexists(fnamemodify("pinmux_analysis.py", ":p")) | buffer pinmux_analysis.py | else | edit pinmux_analysis.py | endif
+balt sample/pinmux.json
+let s:cpo_save=&cpo
+set cpo&vim
+nmap <buffer> [c <Plug>(GitGutterPrevHunk)
+nmap <buffer> \hp <Plug>(GitGutterPreviewHunk)
+nmap <buffer> \hu <Plug>(GitGutterUndoHunk)
+nmap <buffer> \hs <Plug>(GitGutterStageHunk)
+xmap <buffer> \hs <Plug>(GitGutterStageHunk)
+nmap <buffer> ]c <Plug>(GitGutterNextHunk)
+xmap <buffer> ac <Plug>(GitGutterTextObjectOuterVisual)
+omap <buffer> ac <Plug>(GitGutterTextObjectOuterPending)
+xmap <buffer> ic <Plug>(GitGutterTextObjectInnerVisual)
+omap <buffer> ic <Plug>(GitGutterTextObjectInnerPending)
+let &cpo=s:cpo_save
+unlet s:cpo_save
+setlocal keymap=
+setlocal noarabic
+setlocal autoindent
+setlocal backupcopy=
+setlocal balloonexpr=
+setlocal nobinary
+setlocal nobreakindent
+setlocal breakindentopt=
+setlocal bufhidden=
+setlocal buflisted
+setlocal buftype=
+setlocal nocindent
+setlocal cinkeys=0{,0},0),0],:,!^F,o,O,e
+setlocal cinoptions=
+setlocal cinscopedecls=public,protected,private
+setlocal cinwords=if,else,while,do,for,switch
+set colorcolumn=80
+setlocal colorcolumn=80
+setlocal comments=b:#,fb:-
+setlocal commentstring=#\ %s
+setlocal complete=.,w,b,u,t,i
+setlocal completefunc=
+setlocal concealcursor=inc
+setlocal conceallevel=2
+setlocal nocopyindent
+setlocal cryptmethod=
+setlocal nocursorbind
+setlocal nocursorcolumn
+set cursorline
+setlocal cursorline
+setlocal cursorlineopt=both
+setlocal define=^\\s*\\(def\\|class\\)
+setlocal dictionary=
+setlocal nodiff
+setlocal equalprg=
+setlocal errorformat=
+setlocal expandtab
+if &filetype != 'python'
+setlocal filetype=python
+endif
+setlocal fillchars=
+setlocal fixendofline
+setlocal foldcolumn=0
+setlocal foldenable
+setlocal foldexpr=0
+setlocal foldignore=#
+setlocal foldlevel=0
+setlocal foldmarker={{{,}}}
+set foldmethod=marker
+setlocal foldmethod=marker
+setlocal foldminlines=1
+setlocal foldnestmax=20
+setlocal foldtext=foldtext()
+setlocal formatexpr=
+setlocal formatlistpat=^\\s*\\d\\+[\\]:.)}\\t\ ]\\s*
+setlocal formatoptions=tcq
+setlocal formatprg=
+setlocal grepprg=
+setlocal iminsert=0
+setlocal imsearch=-1
+setlocal include=^\\s*\\(from\\|import\\)
+setlocal includeexpr=substitute(substitute(substitute(v:fname,b:grandparent_match,b:grandparent_sub,''),b:parent_match,b:parent_sub,''),b:child_match,b:child_sub,'g')
+setlocal indentexpr=python#GetIndent(v:lnum)
+setlocal indentkeys=0{,0},0),0],:,!^F,o,O,e,<:>,=elif,=except
+setlocal noinfercase
+setlocal iskeyword=@,48-57,_,192-255
+setlocal keywordprg=python3\ -m\ pydoc
+setlocal nolinebreak
+setlocal nolisp
+setlocal lispoptions=
+setlocal lispwords=
+setlocal nolist
+setlocal listchars=
+setlocal makeencoding=
+setlocal makeprg=
+setlocal matchpairs=(:),{:},[:]
+setlocal modeline
+setlocal modifiable
+setlocal nrformats=bin,octal,hex
+set number
+setlocal number
+setlocal numberwidth=4
+setlocal omnifunc=python3complete#Complete
+setlocal path=
+setlocal nopreserveindent
+setlocal nopreviewwindow
+setlocal quoteescape=\\
+setlocal noreadonly
+setlocal norelativenumber
+setlocal norightleft
+setlocal rightleftcmd=search
+setlocal noscrollbind
+setlocal scrolloff=-1
+setlocal shiftwidth=4
+setlocal noshortname
+setlocal showbreak=
+setlocal sidescrolloff=-1
+setlocal signcolumn=auto
+setlocal nosmartindent
+setlocal nosmoothscroll
+setlocal softtabstop=4
+setlocal nospell
+setlocal spellcapcheck=[.?!]\\_[\\])'\"\	\ ]\\+
+setlocal spellfile=
+setlocal spelllang=en
+setlocal spelloptions=
+setlocal statusline=%{lightline#link()}%#LightlineLeft_active_0#%(\ %{lightline#mode()}\ %)%{(&paste)?\"|\":\"\"}%(\ %{&paste?\"PASTE\":\"\"}\ %)%#LightlineLeft_active_0_1#%#LightlineLeft_active_1#%(\ %R\ %)%{(&readonly)&&(1||(&modified||!&modifiable))?\"|\":\"\"}%(\ %t\ %)%{(&modified||!&modifiable)?\"|\":\"\"}%(\ %M\ %)%#LightlineLeft_active_1_2#%#LightlineMiddle_active#%=%#LightlineRight_active_2_3#%#LightlineRight_active_2#%(\ %{&ff}\ %)%{1||1?\"|\":\"\"}%(\ %{&fenc!=#\"\"?&fenc:&enc}\ %)%{1?\"|\":\"\"}%(\ %{&ft!=#\"\"?&ft:\"no\ ft\"}\ %)%#LightlineRight_active_1_2#%#LightlineRight_active_1#%(\ %3p%%\ %)%#LightlineRight_active_0_1#%#LightlineRight_active_0#%(\ %3l:%-2c\ %)
+setlocal suffixesadd=.py
+setlocal swapfile
+setlocal synmaxcol=3000
+if &syntax != 'python'
+setlocal syntax=python
+endif
+setlocal tabstop=4
+setlocal tagcase=
+setlocal tagfunc=
+setlocal tags=
+setlocal termwinkey=
+setlocal termwinscroll=10000
+setlocal termwinsize=
+setlocal textwidth=0
+setlocal thesaurus=
+setlocal thesaurusfunc=
+setlocal noundofile
+setlocal undolevels=-123456
+setlocal varsofttabstop=
+setlocal vartabstop=
+setlocal virtualedit=
+setlocal wincolor=
+setlocal nowinfixheight
+setlocal nowinfixwidth
+set nowrap
+setlocal nowrap
+setlocal wrapmargin=0
+let s:l = 189 - ((19 * winheight(0) + 17) / 35)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 189
+normal! 029|
+wincmd w
+3wincmd w
+exe 'vert 1resize ' . ((&columns * 106 + 117) / 235)
+exe '2resize ' . ((&lines * 22 + 30) / 60)
+exe 'vert 2resize ' . ((&columns * 128 + 117) / 235)
+exe '3resize ' . ((&lines * 35 + 30) / 60)
+exe 'vert 3resize ' . ((&columns * 128 + 117) / 235)
+tabnext
+edit /mnt/DATA_DISK/Workspace/10_Project/01_SW/00_Python/eda_aid_tool/utils/primetime_cons.py
+argglobal
+let s:cpo_save=&cpo
+set cpo&vim
+nmap <buffer> [c <Plug>(GitGutterPrevHunk)
+nmap <buffer> \hp <Plug>(GitGutterPreviewHunk)
+nmap <buffer> \hu <Plug>(GitGutterUndoHunk)
+nmap <buffer> \hs <Plug>(GitGutterStageHunk)
+xmap <buffer> \hs <Plug>(GitGutterStageHunk)
+nmap <buffer> ]c <Plug>(GitGutterNextHunk)
+xmap <buffer> ac <Plug>(GitGutterTextObjectOuterVisual)
+omap <buffer> ac <Plug>(GitGutterTextObjectOuterPending)
+xmap <buffer> ic <Plug>(GitGutterTextObjectInnerVisual)
+omap <buffer> ic <Plug>(GitGutterTextObjectInnerPending)
+let &cpo=s:cpo_save
+unlet s:cpo_save
+setlocal keymap=
+setlocal noarabic
+setlocal autoindent
+setlocal backupcopy=
+setlocal balloonexpr=
+setlocal nobinary
+setlocal nobreakindent
+setlocal breakindentopt=
+setlocal bufhidden=
+setlocal buflisted
+setlocal buftype=
+setlocal nocindent
+setlocal cinkeys=0{,0},0),0],:,!^F,o,O,e
+setlocal cinoptions=
+setlocal cinscopedecls=public,protected,private
+setlocal cinwords=if,else,while,do,for,switch
+set colorcolumn=80
+setlocal colorcolumn=80
+setlocal comments=b:#,fb:-
+setlocal commentstring=#\ %s
+setlocal complete=.,w,b,u,t,i
+setlocal completefunc=
+setlocal concealcursor=inc
+setlocal conceallevel=2
+setlocal nocopyindent
+setlocal cryptmethod=
+setlocal nocursorbind
+setlocal nocursorcolumn
+set cursorline
+setlocal cursorline
+setlocal cursorlineopt=both
+setlocal define=^\\s*\\(def\\|class\\)
+setlocal dictionary=
+setlocal nodiff
+setlocal equalprg=
+setlocal errorformat=
+setlocal expandtab
+if &filetype != 'python'
+setlocal filetype=python
+endif
+setlocal fillchars=
+setlocal fixendofline
+setlocal foldcolumn=0
+setlocal foldenable
+setlocal foldexpr=0
+setlocal foldignore=#
+setlocal foldlevel=0
+setlocal foldmarker={{{,}}}
+set foldmethod=marker
+setlocal foldmethod=marker
+setlocal foldminlines=1
+setlocal foldnestmax=20
+setlocal foldtext=foldtext()
+setlocal formatexpr=
+setlocal formatlistpat=^\\s*\\d\\+[\\]:.)}\\t\ ]\\s*
+setlocal formatoptions=tcq
+setlocal formatprg=
+setlocal grepprg=
+setlocal iminsert=0
+setlocal imsearch=-1
+setlocal include=^\\s*\\(from\\|import\\)
+setlocal includeexpr=substitute(substitute(substitute(v:fname,b:grandparent_match,b:grandparent_sub,''),b:parent_match,b:parent_sub,''),b:child_match,b:child_sub,'g')
+setlocal indentexpr=python#GetIndent(v:lnum)
+setlocal indentkeys=0{,0},0),0],:,!^F,o,O,e,<:>,=elif,=except
+setlocal noinfercase
+setlocal iskeyword=@,48-57,_,192-255
+setlocal keywordprg=python3\ -m\ pydoc
+setlocal nolinebreak
+setlocal nolisp
+setlocal lispoptions=
+setlocal lispwords=
+setlocal nolist
+setlocal listchars=
+setlocal makeencoding=
+setlocal makeprg=
+setlocal matchpairs=(:),{:},[:]
+setlocal modeline
+setlocal modifiable
+setlocal nrformats=bin,octal,hex
+set number
+setlocal number
+setlocal numberwidth=4
+setlocal omnifunc=python3complete#Complete
+setlocal path=
+setlocal nopreserveindent
+setlocal nopreviewwindow
+setlocal quoteescape=\\
+setlocal noreadonly
+setlocal norelativenumber
+setlocal norightleft
+setlocal rightleftcmd=search
+setlocal noscrollbind
+setlocal scrolloff=-1
+setlocal shiftwidth=4
+setlocal noshortname
+setlocal showbreak=
+setlocal sidescrolloff=-1
+setlocal signcolumn=auto
+setlocal nosmartindent
+setlocal nosmoothscroll
+setlocal softtabstop=4
+setlocal nospell
+setlocal spellcapcheck=[.?!]\\_[\\])'\"\	\ ]\\+
+setlocal spellfile=
+setlocal spelllang=en
+setlocal spelloptions=
+setlocal statusline=%{lightline#link()}%#LightlineLeft_active_0#%(\ %{lightline#mode()}\ %)%{(&paste)?\"|\":\"\"}%(\ %{&paste?\"PASTE\":\"\"}\ %)%#LightlineLeft_active_0_1#%#LightlineLeft_active_1#%(\ %R\ %)%{(&readonly)&&(1||(&modified||!&modifiable))?\"|\":\"\"}%(\ %t\ %)%{(&modified||!&modifiable)?\"|\":\"\"}%(\ %M\ %)%#LightlineLeft_active_1_2#%#LightlineMiddle_active#%=%#LightlineRight_active_2_3#%#LightlineRight_active_2#%(\ %{&ff}\ %)%{1||1?\"|\":\"\"}%(\ %{&fenc!=#\"\"?&fenc:&enc}\ %)%{1?\"|\":\"\"}%(\ %{&ft!=#\"\"?&ft:\"no\ ft\"}\ %)%#LightlineRight_active_1_2#%#LightlineRight_active_1#%(\ %3p%%\ %)%#LightlineRight_active_0_1#%#LightlineRight_active_0#%(\ %3l:%-2c\ %)
+setlocal suffixesadd=.py
+setlocal swapfile
+setlocal synmaxcol=3000
+if &syntax != 'python'
+setlocal syntax=python
+endif
+setlocal tabstop=4
+setlocal tagcase=
+setlocal tagfunc=
+setlocal tags=
+setlocal termwinkey=
+setlocal termwinscroll=10000
+setlocal termwinsize=
+setlocal textwidth=0
+setlocal thesaurus=
+setlocal thesaurusfunc=
+setlocal noundofile
+setlocal undolevels=-123456
+setlocal varsofttabstop=
+setlocal vartabstop=
+setlocal virtualedit=
+setlocal wincolor=
+setlocal nowinfixheight
+setlocal nowinfixwidth
+set nowrap
+setlocal nowrap
+setlocal wrapmargin=0
+let s:l = 163 - ((29 * winheight(0) + 30) / 60)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 163
+normal! 02|
+tabnext
+edit sample/pinmux.json
+argglobal
+let s:cpo_save=&cpo
+set cpo&vim
+nmap <buffer> [c <Plug>(GitGutterPrevHunk)
+nmap <buffer> \hp <Plug>(GitGutterPreviewHunk)
+nmap <buffer> \hu <Plug>(GitGutterUndoHunk)
+nmap <buffer> \hs <Plug>(GitGutterStageHunk)
+xmap <buffer> \hs <Plug>(GitGutterStageHunk)
+nmap <buffer> ]c <Plug>(GitGutterNextHunk)
+xmap <buffer> ac <Plug>(GitGutterTextObjectOuterVisual)
+omap <buffer> ac <Plug>(GitGutterTextObjectOuterPending)
+xmap <buffer> ic <Plug>(GitGutterTextObjectInnerVisual)
+omap <buffer> ic <Plug>(GitGutterTextObjectInnerPending)
+let &cpo=s:cpo_save
+unlet s:cpo_save
+setlocal keymap=
+setlocal noarabic
+setlocal autoindent
+setlocal backupcopy=
+setlocal balloonexpr=
+setlocal nobinary
+setlocal nobreakindent
+setlocal breakindentopt=
+setlocal bufhidden=
+setlocal buflisted
+setlocal buftype=
+setlocal nocindent
+setlocal cinkeys=0{,0},0),0],:,0#,!^F,o,O,e
+setlocal cinoptions=
+setlocal cinscopedecls=public,protected,private
+setlocal cinwords=if,else,while,do,for,switch
+set colorcolumn=80
+setlocal colorcolumn=80
+setlocal comments=
+setlocal commentstring=
+setlocal complete=.,w,b,u,t,i
+setlocal completefunc=
+setlocal concealcursor=inc
+setlocal conceallevel=2
+setlocal nocopyindent
+setlocal cryptmethod=
+setlocal nocursorbind
+setlocal nocursorcolumn
+set cursorline
+setlocal cursorline
+setlocal cursorlineopt=both
+setlocal define=
+setlocal dictionary=
+setlocal nodiff
+setlocal equalprg=
+setlocal errorformat=
+setlocal expandtab
+if &filetype != 'json'
+setlocal filetype=json
+endif
+setlocal fillchars=
+setlocal fixendofline
+setlocal foldcolumn=0
+setlocal foldenable
+setlocal foldexpr=0
+setlocal foldignore=#
+setlocal foldlevel=0
+setlocal foldmarker={{{,}}}
+set foldmethod=marker
+setlocal foldmethod=marker
+setlocal foldminlines=1
+setlocal foldnestmax=20
+setlocal foldtext=foldtext()
+setlocal formatexpr=
+setlocal formatlistpat=^\\s*\\d\\+[\\]:.)}\\t\ ]\\s*
+setlocal formatoptions=cq
+setlocal formatprg=
+setlocal grepprg=
+setlocal iminsert=0
+setlocal imsearch=-1
+setlocal include=
+setlocal includeexpr=
+setlocal indentexpr=GetJSONIndent(v:lnum)
+setlocal indentkeys=0{,0},0),0[,0],!^F,o,O,e
+setlocal noinfercase
+setlocal iskeyword=@,48-57,_,192-255
+setlocal keywordprg=
+setlocal nolinebreak
+setlocal nolisp
+setlocal lispoptions=
+setlocal lispwords=
+setlocal nolist
+setlocal listchars=
+setlocal makeencoding=
+setlocal makeprg=
+setlocal matchpairs=(:),{:},[:]
+setlocal modeline
+setlocal modifiable
+setlocal nrformats=bin,octal,hex
+set number
+setlocal number
+setlocal numberwidth=4
+setlocal omnifunc=
+setlocal path=
+setlocal nopreserveindent
+setlocal nopreviewwindow
+setlocal quoteescape=\\
+setlocal noreadonly
+setlocal norelativenumber
+setlocal norightleft
+setlocal rightleftcmd=search
+setlocal noscrollbind
+setlocal scrolloff=-1
+setlocal shiftwidth=4
+setlocal noshortname
+setlocal showbreak=
+setlocal sidescrolloff=-1
+setlocal signcolumn=auto
+setlocal nosmartindent
+setlocal nosmoothscroll
+setlocal softtabstop=4
+setlocal nospell
+setlocal spellcapcheck=[.?!]\\_[\\])'\"\	\ ]\\+
+setlocal spellfile=
+setlocal spelllang=en
+setlocal spelloptions=
+setlocal statusline=%{lightline#link()}%#LightlineLeft_active_0#%(\ %{lightline#mode()}\ %)%{(&paste)?\"|\":\"\"}%(\ %{&paste?\"PASTE\":\"\"}\ %)%#LightlineLeft_active_0_1#%#LightlineLeft_active_1#%(\ %R\ %)%{(&readonly)&&(1||(&modified||!&modifiable))?\"|\":\"\"}%(\ %t\ %)%{(&modified||!&modifiable)?\"|\":\"\"}%(\ %M\ %)%#LightlineLeft_active_1_2#%#LightlineMiddle_active#%=%#LightlineRight_active_2_3#%#LightlineRight_active_2#%(\ %{&ff}\ %)%{1||1?\"|\":\"\"}%(\ %{&fenc!=#\"\"?&fenc:&enc}\ %)%{1?\"|\":\"\"}%(\ %{&ft!=#\"\"?&ft:\"no\ ft\"}\ %)%#LightlineRight_active_1_2#%#LightlineRight_active_1#%(\ %3p%%\ %)%#LightlineRight_active_0_1#%#LightlineRight_active_0#%(\ %3l:%-2c\ %)
+setlocal suffixesadd=
+setlocal swapfile
+setlocal synmaxcol=3000
+if &syntax != 'json'
+setlocal syntax=json
+endif
+setlocal tabstop=4
+setlocal tagcase=
+setlocal tagfunc=
+setlocal tags=
+setlocal termwinkey=
+setlocal termwinscroll=10000
+setlocal termwinsize=
+setlocal textwidth=0
+setlocal thesaurus=
+setlocal thesaurusfunc=
+setlocal noundofile
+setlocal undolevels=-123456
+setlocal varsofttabstop=
+setlocal vartabstop=
+setlocal virtualedit=
+setlocal wincolor=
+setlocal nowinfixheight
+setlocal nowinfixwidth
+set nowrap
+setlocal nowrap
+setlocal wrapmargin=0
+let s:l = 34 - ((33 * winheight(0) + 30) / 60)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 34
+normal! 0
+tabnext 1
+set stal=1
+if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0
+  silent exe 'bwipe ' . s:wipebuf
+endif
+unlet! s:wipebuf
+set winheight=1 winwidth=20
+set shortmess=filnxtToOSc
+let &winminheight = s:save_winminheight
+let &winminwidth = s:save_winminwidth
+let s:sx = expand("<sfile>:p:r")."x.vim"
+if filereadable(s:sx)
+  exe "source " . fnameescape(s:sx)
+endif
+let &g:so = s:so_save | let &g:siso = s:siso_save
+doautoall SessionLoadPost
+unlet SessionLoad
+" vim: set ft=vim :
