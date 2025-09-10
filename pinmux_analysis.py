@@ -27,10 +27,10 @@ CONFIG_SCHEMA = {
     '$schema': 'https://json-schema.org/draft/2020-12/schema',
     'type': 'object',
     'additionalProperties': False,
-    'required': ['hide_parse', 'table_parse', 'function_group', 'function_ignore'],
+    'required': ['hide_row_parse', 'table_format', 'function', 'ignore', 'partition'],
     'properties': {
-        'hide_parse': {'type': 'boolean'},
-        'table_parse': {
+        'hide_row_parse': {'type': 'boolean'},
+        'table_format': {
             'type': 'object',
             'additionalProperties': False,
             'required': ['active_ws', 'function', 'pad_name', 'ref_name'],
@@ -68,22 +68,26 @@ CONFIG_SCHEMA = {
                 }
             }
         },
-        'function_group': {
+        'function': {
             'type': 'object',
             'additionalProperties': False,
             'patternProperties': {
                 r'\S+': {
                     'type': 'object',
                     'additionalProperties': False,
-                    'required': ['pattern', 'subname', 'clock', 'custom'],
+                    'required': ['subgroup', 'clock', 'custom'],
                     'properties': {
-                        'pattern': {
+                        'subgroup': {
                             'type': 'array',
-                            'items': {'type': 'string'}
-                        },
-                        'subname': {
-                            'type': 'array',
-                            'items': {'type': 'string'}
+                            'items': {
+                                'type': 'object',
+                                'additionalProperties': False,
+                                'required': ['pattern', 'name'],
+                                'properties': {
+                                    'pattern': {'type': 'string'},
+                                    'name': {'type': 'string'}
+                                }
+                            }
                         },
                         'clock': {
                             'type': 'array',
@@ -100,9 +104,22 @@ CONFIG_SCHEMA = {
                 }
             }
         },
-        'function_ignore': {
-            'type': 'array',
-            'items': {'type': 'string'}
+        'ignore': {
+            'type': 'object',
+            'additionalProperties': False,
+            'patternProperties': {
+                r'\S+': {'type': 'string'}
+            }
+        },
+        'partition': {
+            'type': 'object',
+            'additionalProperties': False,
+            'patternProperties': {
+                r'\S+': {
+                    'type': 'array',
+                    'items': {'type': 'string'}
+                }
+            }
         }
     }
 }
@@ -146,32 +163,32 @@ class GroupData:
 
 def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
     """Parsing the pinmux table"""
-    ws = workbook[config['table_parse']['active_ws']]
+    ws = workbook[config['table_format']['active_ws']]
 
     ### Get table format
     re_pat_list = []
-    for pat in config['table_parse']['function']['pattern']:
+    for pat in config['table_format']['function']['pattern']:
         re_pat_list.append(re.compile(pat))
 
     func_cidx_list = []
-    for i, cell in enumerate(ws[config['table_parse']['function']['rid']], start=1):
+    for i, cell in enumerate(ws[config['table_format']['function']['rid']], start=1):
         for re_pat in re_pat_list:
             if re_pat.fullmatch(str(cell.value)):
                 func_cidx_list.append(i)
                 break
     func_cidx_list = [(x-1, x) for x in func_cidx_list]
 
-    re_pat = re.compile(config['table_parse']['pad_name']['pattern'])
+    re_pat = re.compile(config['table_format']['pad_name']['pattern'])
     pad_cidx = None
-    for i, cell in enumerate(ws[config['table_parse']['pad_name']['rid']], start=1):
+    for i, cell in enumerate(ws[config['table_format']['pad_name']['rid']], start=1):
         value = str(cell.value).replace('\n', ' ').strip()
         if re_pat.fullmatch(value):
             pad_cidx = i
             break
 
-    re_pat = re.compile(config['table_parse']['ref_name']['pattern'])
+    re_pat = re.compile(config['table_format']['ref_name']['pattern'])
     ref_cidx = None
-    for i, cell in enumerate(ws[config['table_parse']['ref_name']['rid']], start=1):
+    for i, cell in enumerate(ws[config['table_format']['ref_name']['rid']], start=1):
         value = str(cell.value).replace('\n', ' ').strip()
         if re_pat.fullmatch(value):
             ref_cidx = i
@@ -182,30 +199,29 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
         print('Pad name index:', pad_cidx)
         print('Ref name index:', ref_cidx)
 
-    ### Get ignore list
-    ignore_list = []
-    for pat in config['function_ignore']:
-        ignore_list.append(re.compile(pat))
+    ### Get ignore dictionary
+    ignore_dict = {}
+    for gname, pat in config['ignore'].items():
+        ignore_dict[gname] = {'active': False, 'repat': re.compile(pat)}
 
     if is_debug:
-        print('\nIgnore list: [')
-        for repat in ignore_list:
-            print(f'  {repat},')
-        print(']')
+        print('\nIgnore dictionary: {')
+        for gname, repat in ignore_dict.items():
+            print('  {}: {},'.format(gname, repat['repat']))
+        print('}')
 
     ### Get group format
     unknown_list = []
     group_dict = {}
-    for gname, gdata in config['function_group'].items():
-        grp_data = group_dict.setdefault(gname, GroupData())
-        for pat in gdata['pattern']:
-            grp_data.repat.append(re.compile(pat))
-        for pat in gdata['subname']:
-            grp_data.sub_name.append(pat)
-        for pat in gdata['clock']:
-            grp_data.clk_repat.append(re.compile(pat))
-        for name, pat in gdata['custom'].items():
-            grp_data.cus_pin[name] = re.compile(pat)
+    for gname, gconfig in config['function'].items():
+        gdata = group_dict.setdefault(gname, GroupData())
+        for sgroup in gconfig['subgroup']:
+            gdata.repat.append(re.compile(sgroup['pattern']))
+            gdata.sub_name.append(sgroup['name'])
+        for pat in gconfig['clock']:
+            gdata.clk_repat.append(re.compile(pat))
+        for name, pat in gconfig['custom'].items():
+            gdata.cus_pin[name] = re.compile(pat)
 
     if is_debug:
         debug_group_dict(group_dict, 'initial')
@@ -213,7 +229,8 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
     ### Parsing table
     for ridx in range(1, ws.max_row+1):
         # row hidden check
-        if ws.row_dimensions[ridx].hidden:
+        if ws.row_dimensions[ridx].hidden and not config['hide_row_parse']:
+            print('check')
             continue
 
         for dir_cidx, func_cidx in func_cidx_list:
@@ -223,8 +240,9 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
 
             # ignore function check
             func_name, is_ignore = str(ws.cell(ridx, func_cidx).value), False
-            for repat in ignore_list:
-                if repat.fullmatch(func_name):
+            for repat in ignore_dict.values():
+                if repat['repat'].fullmatch(func_name):
+                    repat['active'] = True
                     is_ignore = True
                     break
             if is_ignore:
@@ -265,6 +283,7 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
                     unknown_list.append(pin_data)
 
     group_dict['unknown'] = unknown_list
+    group_dict['ignore'] = ignore_dict
     if is_debug:
         debug_group_dict(group_dict, 'update')
     return group_dict
@@ -274,7 +293,7 @@ def print_group(group_dict: dict, out_fp):
     """Print the group result"""
 
     ### Sub function
-    def _print_pin(pin_list: list, tabspace: int=0):
+    def _print_pin(pin_list: list, cpin_set: set|None=None, tabspace: int=0):
         func_len, pad_len, ref_len = 0, 0, 0
         for pin in pin_list:
             if (strlen := len(pin.func)) > func_len:
@@ -285,8 +304,16 @@ def print_group(group_dict: dict, out_fp):
                 ref_len = strlen
 
         for pin in pin_list:
-            print('{}{} {:2} {} ({})'.format(
+            if cpin_set is None:
+                pin_type = ''
+            elif pin.func in cpin_set:
+                pin_type = '[C] '
+            else:
+                pin_type = '[D] '
+
+            print('{}{}{} {:2} {} ({})'.format(
                     ' ' * tabspace,
+                    pin_type,
                     pin.func.ljust(func_len), 
                     pin.dir, 
                     pin.pad.ljust(pad_len), 
@@ -294,15 +321,21 @@ def print_group(group_dict: dict, out_fp):
                   file=out_fp)
 
     ### Print group result
+    gname_len = 0
+    for gname in group_dict.keys():
+        if gname in {'unknown', 'ignore'}:
+            continue
+        if (new_len := len(gname)) > gname_len:
+            gname_len = new_len
+    gname_len += 6
+
     print('\n=== Category:\n', file=out_fp)
     for gname, gdata in group_dict.items():
-        if gname == 'unknown':
+        if gname in {'unknown', 'ignore'}:
             continue
-        print(f'    {gname}: '.ljust(10), end='', file=out_fp)
+        print(f'    {gname}: '.ljust(gname_len), end='', file=out_fp)
         msg = ''
         for sgname in gdata.sub_group.keys():
-            if sgname == 'default':
-                continue
             msg += f'{sgname}, '
         print(msg[:-2], file=out_fp)
 
@@ -311,22 +344,31 @@ def print_group(group_dict: dict, out_fp):
         # print the information of pins
         _print_pin(group_dict['unknown'], tabspace=4)
 
+    active_ignore_dict, sgname_len = {}, 0
+    for sgname, repat in group_dict['ignore'].items():
+        if repat['active']:
+            active_ignore_dict[sgname] = repat['repat']
+            if (new_len := len(sgname)) > sgname_len:
+                sgname_len = new_len
+
+    if len(active_ignore_dict):
+        print('\n=== Parsing Ignore:\n', file=out_fp)
+        for sgname, repat in active_ignore_dict.items():
+            print('    {}: {}'.format(sgname, repat.pattern), file=out_fp)
+
     print('\n=== Function:\n', file=out_fp)
     for gname, gdata in group_dict.items():
-        if gname == 'unknown':
+        if gname in {'unknown', 'ignore'}:
             continue
+
         for sgname, sgdata in gdata.sub_group.items():
             if len(sgdata.pin_list) == 0:
                 continue
-            if sgname == 'default':
-                title = f'{gname} (ungroup)'
-            else:
-                title = sgname
-                
-            print(f'- {title}:\n', file=out_fp)
+            print(f'- {sgname}:\n', file=out_fp)
 
             # print pin information
-            _print_pin(sgdata.pin_list, tabspace=4)
+            cpin_set = set([pin.func for pin in sgdata.clk_pin])
+            _print_pin(sgdata.pin_list, cpin_set=cpin_set, tabspace=4)
             print(file=out_fp)
 
             # print tool command
@@ -415,9 +457,15 @@ def debug_group_dict(group_dict: dict, status: str):
             for pin in gdata:
                 print(f'    {pin},')
             print(f'  ],')
+        elif gname == 'ignore':
+            print(f'  {gname}: {{')
+            for sgname, repat in gdata.items():
+                print(f'    {sgname}: {repat},')
+            print(f'  }},')
         else:
             print(f'  {gname}: {{')
             print(f'    repat:     {gdata.repat}')
+            print(f'    sub_name:  {gdata.sub_name}')
             print(f'    clk_repat: {gdata.clk_repat}')
             print(f'    cus_pin:   {gdata.cus_pin}')
             for sgname, sgdata in gdata.sub_group.items():
@@ -449,6 +497,8 @@ def create_argparse() -> argparse.ArgumentParser:
     parser.add_argument('table_fp', help="File path of the pinmux table") 
     parser.add_argument('-outfile', dest='out_fp', metavar='<file_path>', 
                             help="Set the output file path") 
+    parser.add_argument('-debug', dest='is_debug', action='store_true', 
+                                help="Debug mode")
     return parser
 
 
@@ -467,7 +517,7 @@ def main():
         exit(1)
 
     wb = openpyxl.load_workbook(args.table_fp)
-    group_dict = parse_table(config, wb, is_debug=False)
+    group_dict = parse_table(config, wb, is_debug=args.is_debug)
 
     if args.out_fp is None:
         print_group(group_dict, sys.stdout)

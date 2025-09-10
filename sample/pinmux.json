@@ -1,6 +1,6 @@
 {
-    "hide_parse": false,
-    "table_parse": 
+    "hide_row_parse": false,
+    "table_format": 
     {
         "active_ws": "Pinmux",
         "function": 
@@ -19,28 +19,43 @@
             "pattern": "Pad Cell Name"
         }
     },
-    "function_group": 
+    "function": 
     {
         "SDIO": 
         {
-            "pattern": ["(SDIO\\d*)_\\w+(?:\\(BS\\))*"],
-            "subname": ["\\1"],
-            "clock": ["\\w+_CLK(?:\\(BS\\))*"],
+            "subgroup": 
+            [
+                {"pattern": "SDIO(\\d*)_.+", "name": "SDIO\\1"}
+            ],
+            "clock": 
+            [
+                "SDIO\\d*_CLK.*"
+            ],
             "custom": 
             {
-                "DATA_H": "SDIO\\d*_D(?:0|1)(?:\\(BS\\))*"
+                "DATA_H": "SDIO\\d*_D(?:0|1).*"
             }
         },
         "BMC":
         {
-            "pattern": ["^(BMC)_\\w+"],
-            "subname": ["\\1"],
-            "clock": ["\\w+_CLK"],
+            "subgroup":
+            [
+                {"pattern": "BMC_\\w+", "name": "BMC"}
+            ],
+            "clock": 
+            [
+                "\\w+_CLK"
+            ],
             "custom": {}
         }
     },
-    "function_ignore":
-    [
-        "FUNC_\\w+"
-    ]
+    "ignore":
+    {
+        "FUNC": "FUNC_\\w+",
+        "FUNC2": "FUNC2_\\w+"
+    },
+    "partition":
+    {
+        "top1": ["MC\\d+"]
+    }
 }
