@@ -75,9 +75,16 @@ CONFIG_SCHEMA = {
                 r'\S+': {
                     'type': 'object',
                     'additionalProperties': False,
-                    'required': ['pattern', 'clock', 'custom'],
+                    'required': ['pattern', 'subname', 'clock', 'custom'],
                     'properties': {
-                        'pattern': {'type': 'string'},
+                        'pattern': {
+                            'type': 'array',
+                            'items': {'type': 'string'}
+                        },
+                        'subname': {
+                            'type': 'array',
+                            'items': {'type': 'string'}
+                        },
                         'clock': {
                             'type': 'array',
                             'items': {'type': 'string'}
@@ -126,7 +133,8 @@ class SubGroup:
 
 @dataclass
 class GroupData:
-    repat:     re.Pattern
+    repat:     list[re.Pattern] = field(default_factory=list)
+    sub_name:  list[str]        = field(default_factory=list)
     clk_repat: list[re.Pattern] = field(default_factory=list)
     cus_pin:   dict[re.Pattern] = field(default_factory=dict)
     sub_group: dict[SubGroup]   = field(default_factory=dict)
@@ -189,12 +197,15 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
     unknown_list = []
     group_dict = {}
     for gname, gdata in config['function_group'].items():
-        group_dict[gname] = (grp_data := GroupData(repat=re.compile(gdata['pattern'])))
-        for clk_pat in gdata['clock']:
-            grp_data.clk_repat.append(re.compile(clk_pat))
+        grp_data = group_dict.setdefault(gname, GroupData())
+        for pat in gdata['pattern']:
+            grp_data.repat.append(re.compile(pat))
+        for pat in gdata['subname']:
+            grp_data.sub_name.append(pat)
+        for pat in gdata['clock']:
+            grp_data.clk_repat.append(re.compile(pat))
         for name, pat in gdata['custom'].items():
             grp_data.cus_pin[name] = re.compile(pat)
-        grp_data.sub_group['default'] = SubGroup()
 
     if is_debug:
         debug_group_dict(group_dict, 'initial')
@@ -234,23 +245,21 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
 
                 is_unknown = True
                 for gname, gdata in group_dict.items():
-                    if (m := gdata.repat.fullmatch(pin_data.func)):
-                        is_clk, is_unknown = False, False
-                        for repat in gdata.clk_repat:
-                            if repat.fullmatch(pin_data.func):
-                                is_clk = True
-                                break
+                    for pid, repat in enumerate(gdata.repat):
+                        if (m := repat.fullmatch(pin_data.func)):
+                            is_clk, is_unknown = False, False
+                            for clk_repat in gdata.clk_repat:
+                                if clk_repat.fullmatch(pin_data.func):
+                                    is_clk = True
+                                    break
 
-                        if len(m.groups()):
-                            sgdata = gdata.sub_group.setdefault(m[1], SubGroup())
-                        else:
-                            sgdata = gdata.sub_group['default']
-
-                        if is_clk:
-                            sgdata.clk_pin.append(pin_data)
-                        else:
-                            sgdata.data_pin.append(pin_data)
-                        sgdata.pin_list.append(pin_data)
+                            sgname = repat.sub(gdata.sub_name[pid], pin_data.func)
+                            sgdata = gdata.sub_group.setdefault(sgname, SubGroup())
+                            if is_clk:
+                                sgdata.clk_pin.append(pin_data)
+                            else:
+                                sgdata.data_pin.append(pin_data)
+                            sgdata.pin_list.append(pin_data)
 
                 if is_unknown:
                     unknown_list.append(pin_data)
@@ -463,7 +472,7 @@ def main():
     if args.out_fp is None:
         print_group(group_dict, sys.stdout)
     else:
-        with open(args.out_fp, 'w') as fp:
+        with open(args.out_fp, 'w', encoding='utf-8') as fp:
             print_group(group_dict, fp)
 
 
