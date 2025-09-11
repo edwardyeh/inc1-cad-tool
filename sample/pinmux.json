@@ -23,30 +23,21 @@
     {
         "SDIO": 
         {
-            "subgroup": 
-            [
-                {"pattern": "SDIO(\\d*)_.+", "name": "SDIO\\1"}
-            ],
-            "clock": 
-            [
-                "SDIO\\d*_CLK.*"
-            ],
-            "custom": 
-            {
-                "DATA_H": "SDIO\\d*_D(?:0|1).*"
-            }
+            "subgroup": [ {"pattern": "SDIO(\\d*)_.+", "name": "SDIO\\1"} ],
+            "clock":    [ "SDIO\\d*_CLK.*" ],
+            "custom":   { "DATA_H": "SDIO\\d*_D(?:0|1).*" }
         },
         "BMC":
         {
-            "subgroup":
-            [
-                {"pattern": "BMC_\\w+", "name": "BMC"}
-            ],
-            "clock": 
-            [
-                "\\w+_CLK"
-            ],
-            "custom": {}
+            "subgroup": [ {"pattern": "BMC_\\w+", "name": "BMC"} ],
+            "clock":    [ "\\w+_CLK" ],
+            "custom":   {}
+        },
+        "JTAG":
+        {
+            "subgroup": [ {"pattern": "JTAG_\\w+", "name": "JTAG"} ],
+            "clock":    [ "\\w+_TCK" ],
+            "custom":   {}
         }
     },
     "ignore":
@@ -56,6 +47,6 @@
     },
     "partition":
     {
-        "top1": ["MC\\d+"]
+        "top1": ["MC\\d+", "PGPIO\\d+"]
     }
 }

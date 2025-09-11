@@ -7,6 +7,7 @@
 # Copyright (C) 2025 Yeh, Hsin-Hsien <yhh76227@gmail.com>
 #
 import argparse
+import copy
 import json
 import openpyxl
 import re
@@ -150,11 +151,21 @@ class SubGroup:
 
 @dataclass
 class GroupData:
-    repat:     list[re.Pattern] = field(default_factory=list)
-    sub_name:  list[str]        = field(default_factory=list)
-    clk_repat: list[re.Pattern] = field(default_factory=list)
-    cus_pin:   dict[re.Pattern] = field(default_factory=dict)
-    sub_group: dict[SubGroup]   = field(default_factory=dict)
+    repat:     list[re.Pattern]      = field(default_factory=list)
+    sub_name:  list[str]             = field(default_factory=list)
+    clk_repat: list[re.Pattern]      = field(default_factory=list)
+    cus_pin:   dict[re.Pattern]      = field(default_factory=dict)
+    sub_group: defaultdict[SubGroup] = field(init=False)
+    def __post_init__(self):
+        self.sub_group = defaultdict(SubGroup)
+
+
+@dataclass
+class PartGroupDict:
+    repat: list[re.Pattern]       = field(default_factory=list)
+    group: defaultdict[GroupData] = field(init=False)
+    def __post_init__(self):
+        self.group = defaultdict(GroupData)
 
 
 ##############################################################################
@@ -212,9 +223,9 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
 
     ### Get group format
     unknown_list = []
-    group_dict = {}
+    group_dict = defaultdict(GroupData)
     for gname, gconfig in config['function'].items():
-        gdata = group_dict.setdefault(gname, GroupData())
+        gdata = group_dict[gname]
         for sgroup in gconfig['subgroup']:
             gdata.repat.append(re.compile(sgroup['pattern']))
             gdata.sub_name.append(sgroup['name'])
@@ -225,6 +236,18 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
 
     if is_debug:
         debug_group_dict(group_dict, 'initial')
+
+    ### Get partition group format
+    part_dict = defaultdict(PartGroupDict)
+    for pname, pat_list in config['partition'].items():
+        part_dict[pname].repat = [re.compile(x) for x in pat_list]
+        part_dict[pname].group['unknown'] = []
+        part_dict[pname].group['ignore'] = copy.deepcopy(ignore_dict)
+
+    if is_debug:
+        for pname, pdata in part_dict.items():
+            print(f'{pname}: {pdata}')
+        print()
 
     ### Parsing table
     for ridx in range(1, ws.max_row+1):
@@ -239,13 +262,20 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
                 continue
 
             # ignore function check
-            func_name, is_ignore = str(ws.cell(ridx, func_cidx).value), False
-            for repat in ignore_dict.values():
+            func_name = str(ws.cell(ridx, func_cidx).value)
+            pad = str(ws.cell(ridx, pad_cidx).value)
+
+            is_ignore = False
+            for gname, repat in ignore_dict.items():
                 if repat['repat'].fullmatch(func_name):
                     repat['active'] = True
                     is_ignore = True
                     break
             if is_ignore:
+                for pdata in part_dict.values():
+                    for repat in pdata.repat:
+                        if repat.fullmatch(pad):
+                            pdata.group['ignore'][gname]['active'] = True
                 continue
 
             # parsing content
@@ -254,8 +284,8 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
                 pin_data = Pin(
                     func=func_name,
                     dir=str(direction).upper(),
-                    pad=ws.cell(ridx, pad_cidx).value,
-                    ref=ws.cell(ridx, ref_cidx).value
+                    pad=pad,
+                    ref=str(ws.cell(ridx, ref_cidx).value)
                 )
                 
                 if is_debug:
@@ -271,22 +301,49 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
                                     is_clk = True
                                     break
 
+                            # add to the top dictionary
                             sgname = repat.sub(gdata.sub_name[pid], pin_data.func)
-                            sgdata = gdata.sub_group.setdefault(sgname, SubGroup())
+                            sgdata = gdata.sub_group[sgname]
+                            sgdata.pin_list.append(pin_data)
                             if is_clk:
                                 sgdata.clk_pin.append(pin_data)
                             else:
                                 sgdata.data_pin.append(pin_data)
-                            sgdata.pin_list.append(pin_data)
+
+                            # check and add to the partition dictionary
+                            is_check_done = False
+                            for pdata in part_dict.values():
+                                for repat in pdata.repat:
+                                    if repat.fullmatch(pin_data.pad):
+                                        is_check_done = True
+                                        pgdata = pdata.group[gname]
+                                        if len(pgdata.sub_group) == 0:
+                                            pgdata.cus_pin = gdata.cus_pin
+                                        psgdata = pgdata.sub_group[sgname]
+                                        psgdata.pin_list.append(pin_data)
+                                        if is_clk:
+                                            psgdata.clk_pin.append(pin_data)
+                                        else:
+                                            psgdata.data_pin.append(pin_data)
+                                        break
+                                if is_check_done:
+                                    break
 
                 if is_unknown:
                     unknown_list.append(pin_data)
+                    for pdata in part_dict.values():
+                        for repat in pdata.repat:
+                            if repat.fullmatch(pin_data.pad):
+                                pdata.group['unknown'].append(pin_data)
 
     group_dict['unknown'] = unknown_list
     group_dict['ignore'] = ignore_dict
     if is_debug:
         debug_group_dict(group_dict, 'update')
-    return group_dict
+        for pname, pdata in part_dict.items():
+            debug_group_dict(pdata.group, f'update, {pname}')
+
+    return group_dict, part_dict
 
 
 def print_group(group_dict: dict, out_fp):
@@ -354,7 +411,7 @@ def print_group(group_dict: dict, out_fp):
     if len(active_ignore_dict):
         print('\n=== Parsing Ignore:\n', file=out_fp)
         for sgname, repat in active_ignore_dict.items():
-            print('    {}: {}'.format(sgname, repat.pattern), file=out_fp)
+            print('    {}: pattern("{}")'.format(sgname, repat.pattern), file=out_fp)
 
     print('\n=== Function:\n', file=out_fp)
     for gname, gdata in group_dict.items():
@@ -493,12 +550,14 @@ def create_argparse() -> argparse.ArgumentParser:
                 formatter_class=argparse.RawTextHelpFormatter,
                 description='Pinmux Table Analysis for the iVot project')
 
-    parser.add_argument('conf_fp', help="Configuration file") 
-    parser.add_argument('table_fp', help="File path of the pinmux table") 
+    parser.add_argument('conf_fp', help='Configuration file') 
+    parser.add_argument('table_fp', help='File path of the pinmux table') 
     parser.add_argument('-outfile', dest='out_fp', metavar='<file_path>', 
-                            help="Set the output file path") 
+                            help='Set the output file path') 
+    parser.add_argument('-dump_part', dest='is_dump_part', action='store_true', 
+                            help='Dump partition result (effective if "-outfile" is defined)')
     parser.add_argument('-debug', dest='is_debug', action='store_true', 
-                                help="Debug mode")
+                            help='Debug mode')
     return parser
 
 
@@ -517,13 +576,24 @@ def main():
         exit(1)
 
     wb = openpyxl.load_workbook(args.table_fp)
-    group_dict = parse_table(config, wb, is_debug=args.is_debug)
+    group_dict, part_dict = parse_table(config, wb, is_debug=args.is_debug)
 
     if args.out_fp is None:
         print_group(group_dict, sys.stdout)
     else:
         with open(args.out_fp, 'w', encoding='utf-8') as fp:
             print_group(group_dict, fp)
+
+    if args.is_dump_part:
+        for pname, pdata in part_dict.items():
+            if args.out_fp is None:
+                print_group(group_dict, sys.stdout)
+            else:
+                part_out_fp = Path(args.out_fp)
+                part_out_fp = part_out_fp.parent / \
+                                (part_out_fp.stem + f'_{pname}' + part_out_fp.suffix)
+                with open(part_out_fp, 'w', encoding='utf-8') as fp:
+                    print_group(pdata.group, fp)
 
 
 if __name__ == '__main__':
