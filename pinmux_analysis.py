@@ -9,12 +9,14 @@
 import argparse
 import copy
 import json
+import math
 import openpyxl
 import re
 import sys
 from collections import defaultdict
 from dataclasses import dataclass, field
 from jsonschema import validate, ValidationError
+from openpyxl.utils import column_index_from_string
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 from pathlib import Path
@@ -34,15 +36,19 @@ CONFIG_SCHEMA = {
         'table_format': {
             'type': 'object',
             'additionalProperties': False,
-            'required': ['active_ws', 'function', 'pad_name', 'ref_name'],
+            'required': ['active_tab', 'function', 'pad_name', 'ref_name'],
             'properties': {
-                'active_ws': {'type': 'string'},
+                'active_tab': {'type': 'string'},
                 'function': {
                     'type': 'object',
                     'additionalProperties': False,
-                    'required': ['rid', 'pattern'],
+                    'required': ['rid', 'crange', 'pattern'],
                     'properties': {
                         'rid': {'type': 'integer'},
+                        'crange': {
+                            'type': 'array',
+                            'items': {'type': 'string'}
+                        },
                         'pattern': {
                             'type': 'array',
                             'items': {'type': 'string'}
@@ -174,15 +180,26 @@ class PartGroupDict:
 
 def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
     """Parsing the pinmux table"""
-    ws = workbook[config['table_format']['active_ws']]
+    ws = workbook[config['table_format']['active_tab']]
 
     ### Get table format
     re_pat_list = []
     for pat in config['table_format']['function']['pattern']:
         re_pat_list.append(re.compile(pat))
 
+    crange_sz = len(config['table_format']['function']['crange'])
+    cidx_st, cidx_ed = 1, math.inf 
+    if crange_sz >= 1:
+        cidx_st = column_index_from_string(config['table_format']['function']['crange'][0])
+    if crange_sz >= 2:
+        cidx_ed = column_index_from_string(config['table_format']['function']['crange'][1])
+
     func_cidx_list = []
     for i, cell in enumerate(ws[config['table_format']['function']['rid']], start=1):
+        if i < cidx_st:
+            continue
+        if i > cidx_ed:
+            break
         for re_pat in re_pat_list:
             if re_pat.fullmatch(str(cell.value)):
                 func_cidx_list.append(i)

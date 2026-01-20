@@ -2,10 +2,11 @@
     "hide_row_parse": false,
     "table_format": 
     {
-        "active_ws": "Pinmux",
+        "active_tab": "Pinmux",
         "function": 
         {
             "rid": 2, 
+            "crange": [],
             "pattern": ["Function \\d+"]
         },
         "pad_name": 
