@@ -59,10 +59,14 @@ CONFIG_SCHEMA = {
                 'pad_name': {
                     'type': 'object',
                     'additionalProperties': False,
-                    'required': ['rid', 'pattern'],
+                    'required': ['rid', 'pattern', 'style'],
                     'properties': {
                         'rid': {'type': 'integer'},
-                        'pattern': {'type': 'string'}
+                        'pattern': {'type': 'string'},
+                        'style': {
+                            'type': 'string',
+                            'enum': ['upper', 'lower', 'origin']
+                        }
                     }
                 },
                 'ref_name': {
@@ -116,12 +120,8 @@ CONFIG_SCHEMA = {
                                             'type': 'object',
                                             'additionalProperties': False,
                                             'properties': {
-                                                'type': 'object'
-                                                'additionalProperties': False,
-                                                'properties': {
-                                                    'p': {'type': 'string'},
-                                                    'r': {'type': 'string'}
-                                                }
+                                                'p': {'type': 'string'},
+                                                'r': {'type': 'string'}
                                             }
                                         }
                                     }
@@ -190,6 +190,8 @@ class Pin:
     dir:    str
     pad:    str
     ref:    str
+    fname:  str
+    font:   openpyxl.styles.fonts.Font|None = None
 
 
 @dataclass
@@ -300,6 +302,8 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
     unknown_list = []
     group_dict = defaultdict(GroupData)
     for gname, gconfig in config['function'].items():
+        if gname[0] == '_':
+            continue
         gdata = group_dict[gname]
         if 'title' in gconfig:
             for pat in gconfig['title']:
@@ -328,6 +332,8 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
     ### Get partition group format
     part_dict = defaultdict(PartGroupDict)
     for pname, pat_list in config['partition'].items():
+        if pname[0] == '_':
+            continue
         part_dict[pname].pat = [re.compile(x) for x in pat_list]
         part_dict[pname].group['unknown'] = []
         part_dict[pname].group['ignore'] = copy.deepcopy(ignore_dict)
@@ -339,6 +345,8 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
 
     ### Parsing table
     func_name_dict = {}
+    pad_all_set = set()
+    pad_part_dict = {}
     config_ignore = config['table_format']['ignore']
 
     for ridx in range(1, ws.max_row+1):
@@ -350,7 +358,7 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
         if pad_repat.fullmatch(str(ws.cell(ridx, pad_cidx).value)):
             func_name_dict = {}
             for _, func_cidx in func_cidx_list:
-                func_name_dict[func_cidx] = str(ws.cell(ridx, func_cidx).value)
+                func_name_dict[func_cidx] = str(ws.cell(ridx, func_cidx).value).replace('\n', ' ').strip()
             continue
 
         for dir_cidx, func_cidx in func_cidx_list:
@@ -369,13 +377,20 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
                 if ('font_color_index' in config_ignore and fcolor.type == 'indexed' 
                     and fcolor.indexed == config_ignore['font_color_index']):
                     continue
-                if ('font_color_theme' in config_ignore and fcolor.type = 'theme' 
+                if ('font_color_theme' in config_ignore and fcolor.type == 'theme' 
                     and fcolor.theme == config_ignore['font_color_theme']):
                     continue
 
             # ignore function check
-            func_name = str(ws.cell(ridx, func_cidx).value)
-            pad = str(ws.cell(ridx, pad_cidx).value)
+            func_name = str(ws.cell(ridx, func_cidx).value).strip()
+            ref_name = str(ws.cell(ridx, ref_cidx).value).strip()
+            match config['table_format']['pad_name']['style']:
+                case 'upper':
+                    pad_name = str(ws.cell(ridx, pad_cidx).value).upper()
+                case 'lower':
+                    pad_name = str(ws.cell(ridx, pad_cidx).value).lower()
+                case 'origin':
+                    pad_name = str(ws.cell(ridx, pad_cidx).value)
 
             is_ignore = False
             for gname, repat in ignore_dict.items():
@@ -386,22 +401,24 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
             if is_ignore:
                 for pdata in part_dict.values():
                     for repat in pdata.pat:
-                        if repat.fullmatch(pad):
+                        if repat.fullmatch(pad_name):
                             pdata.group['ignore'][gname]['active'] = True
                 continue
 
             # parsing content
             direction = ws.cell(ridx, dir_cidx).value
             if direction is not None and str(direction).upper() in DIR_TAG:
-                pin_data = Pin(
-                    func=func_name,
-                    dir=str(direction).upper(),
-                    pad=pad,
-                    ref=str(ws.cell(ridx, ref_cidx).value)
-                )
+                pin_data = Pin(func=func_name, 
+                               dir=str(direction).upper(), 
+                               pad=pad_name, 
+                               ref=ref_name,
+                               font=ws.cell(ridx, func_cidx).font,
+                               fname=func_name_dict[func_cidx])
+
+                pad_all_set.add(pad_name)
                 
                 if is_debug:
-                    print(pin_data)
+                    print(pin_data, '\n')
 
                 is_unknown = True
                 for gname, gdata in group_dict.items():
@@ -419,8 +436,8 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
                     if len(gdata.sgname) == 0:
                         continue
 
-                    for sgname in gdata.sgname:
-                        if (m := sgname.pat.fullmatch(pin_data.func)):
+                    for sgname_gen in gdata.sgname:
+                        if (m := sgname_gen.pat.fullmatch(pin_data.func)):
                             is_clk, is_unknown = False, False
                             for repat in gdata.clock:
                                 if repat.fullmatch(pin_data.func):
@@ -428,8 +445,8 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
                                     break
 
                             # add to the group dictionary
-                            sgname = sgname.pat.sub(sgname.rep, pin_data.func)
-                            for refine_pat in sgname.ref:
+                            sgname = sgname_gen.pat.sub(sgname_gen.rep, pin_data.func)
+                            for refine_pat in sgname_gen.ref:
                                 sgname = refine_pat['p'].sub(refine_pat['r'], sgname)
                             sgdata = gdata.sgroup[sgname]
                             sgdata.plist.append(pin_data)
@@ -440,13 +457,14 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
 
                             # check and add to the partition dictionary
                             is_check_done = False
-                            for pdata in part_dict.values():
+                            for pname, pdata in part_dict.items():
                                 for repat in pdata.pat:
                                     if repat.fullmatch(pin_data.pad):
                                         is_check_done = True
                                         pgdata = pdata.group[gname]
                                         if len(pgdata.sgroup) == 0:
-                                            pgdata.custom = gdata.custom
+                                            pgdata.sgorder = copy.deepcopy(gdata.sgorder)
+                                            pgdata.custom = copy.deepcopy(gdata.custom)
                                         psgdata = pgdata.sgroup[sgname]
                                         psgdata.plist.append(pin_data)
                                         if is_clk:
@@ -454,8 +472,13 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
                                         else:
                                             psgdata.dpin.append(pin_data)
                                         break
+
                                 if is_check_done:
-                                    break
+                                    is_check_done = False
+                                    if pin_data.pad in pad_part_dict:
+                                        pad_part_dict[pin_data.pad].add(pname)
+                                    else:
+                                        pad_part_dict[pin_data.pad] = set([pname])
 
                         if not is_unknown:
                             break
@@ -477,6 +500,32 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
         for pname, pdata in part_dict.items():
             debug_group_dict(pdata.group, f'update, {pname}')
 
+    if len(pad_part_dict) > 0:
+        print()
+        for pad_name, part_set in pad_part_dict.items():
+            if len(part_set) > 1:
+                print(f'Warning: PAD multi-assign: {pad_name} = {part_set}')
+            pad_all_set.remove(pad_name)
+
+        if len(pad_all_set) > 0:
+            print('\nInformation: PAD non-assign:\n')
+
+            strlen = 0
+            for pad_name in pad_all_set:
+                if (newlen := len(pad_name)) > strlen:
+                    strlen = newlen
+            strlen += 1
+
+            msg = ''
+            for i, pad_name in enumerate(pad_all_set):
+                msg += f'{pad_name},'.rjust(strlen)
+                if i % 10 == 9:
+                    print(msg)
+                    msg = ''
+            if msg != '':
+                print(msg)
+            print()
+
     return group_dict, part_dict
 
 
@@ -484,7 +533,7 @@ def print_group(group_dict: dict, out_fp):
     """Print the group result"""
 
     ### Sub function
-    def _print_pin(pin_list: list, cpin_set: set|None=None, tabspace: int=0):
+    def _print_pin(pin_list: list, cpin_set: set|None=None, tabspace: int=0, is_known: bool=True):
         func_len, pad_len, ref_len = 0, 0, 0
         for pin in pin_list:
             if (strlen := len(pin.func)) > func_len:
@@ -502,14 +551,25 @@ def print_group(group_dict: dict, out_fp):
             else:
                 pin_type = '[D] '
 
-            print('{}{}{} {:2} {} ({})'.format(
-                    ' ' * tabspace,
-                    pin_type,
-                    pin.func.ljust(func_len), 
-                    pin.dir, 
-                    pin.pad.ljust(pad_len), 
-                    pin.ref.ljust(ref_len)), 
-                  file=out_fp)
+            if is_known:
+                print('{}{}{} {:2} {} ({})'.format(
+                        ' ' * tabspace,
+                        pin_type,
+                        pin.func.ljust(func_len), 
+                        pin.dir, 
+                        pin.pad.ljust(pad_len), 
+                        pin.ref.ljust(ref_len)), 
+                      file=out_fp)
+            else:
+                print('{}{}{} {:2} {} ({})   {}'.format(
+                        ' ' * tabspace,
+                        pin_type,
+                        pin.func.ljust(func_len), 
+                        pin.dir, 
+                        pin.pad.ljust(pad_len), 
+                        pin.ref.ljust(ref_len),
+                        pin.fname), 
+                      file=out_fp)
 
     ### Print group result
     gname_len = 0
@@ -535,24 +595,24 @@ def print_group(group_dict: dict, out_fp):
                     toks = [sgname]
                     m = gdata.sgorder.pat.fullmatch(sgname)
                     for i in gdata.sgorder.order:
-                        if m[i] == '':
+                        if m[i] in ('', None):
                             toks.append(0)
                         else:
                             toks.append(int(m[i]))
-                order_list.append(toks)
+                    order_list.append(toks)
 
                 gdata.sgorder.order = []
                 for sgname, *_ in sorted(order_list, key=lambda x: x[1:]):
                     gdata.sgorder.order.append(sgname)
                     msg += f'{sgname}, '
             except Exception as e:
-                print(f'Incorrect sub-group reorder pattern, use the original order. ({gdata.sub_order.pattern})\n')
+                print(f'Incorrect sub-group reorder pattern, use the original order. ({gdata.sgorder.pattern})\n')
                 traceback.print_exc()
                 gdata.sgorder = None
-                for sgname in gdata.sub_group.keys():
+                for sgname in gdata.sgroupkeys():
                     msg += f'{sgname}, '
         else:
-            for sgname in gdata.sub_group.keys():
+            for sgname in gdata.sgroup.keys():
                 msg += f'{sgname}, '
 
         print(msg[:-2], file=out_fp)
@@ -560,7 +620,7 @@ def print_group(group_dict: dict, out_fp):
     if len(group_dict['unknown']):
         print('\n=== Unknown Function:\n', file=out_fp)
         # print the information of pins
-        _print_pin(group_dict['unknown'], tabspace=4)
+        _print_pin(group_dict['unknown'], tabspace=4, is_known=False)
 
     active_ignore_dict, sgname_len = {}, 0
     for sgname, repat in group_dict['ignore'].items():
@@ -619,13 +679,13 @@ def print_group(group_dict: dict, out_fp):
                 print('{}set {} [get_ports {{{}}}]'.format(
                         ' ' * 4,
                         (sgname + '_PADCLK_I').ljust(var_len),
-                        ','.join(ci_list)), file=out_fp)
+                        ' '.join(ci_list)), file=out_fp)
 
             if len(co_list):
                 print('{}set {} [get_ports {{{}}}]'.format(
                         ' ' * 4,
                         (sgname + '_PADCLK_O').ljust(var_len),
-                        ','.join(co_list)), file=out_fp)
+                        ' '.join(co_list)), file=out_fp)
 
             di_list, do_list = [], []
             for pin in sgdata.dpin:
@@ -647,13 +707,13 @@ def print_group(group_dict: dict, out_fp):
                 print('{}set {} [get_ports {{{}}}]'.format(
                         ' ' * 4,
                         (sgname + '_PORT_I').ljust(var_len),
-                        ','.join(di_list)), file=out_fp)
+                        ' '.join(di_list)), file=out_fp)
 
             if len(do_list):
                 print('{}set {} [get_ports {{{}}}]'.format(
                         ' ' * 4,
                         (sgname + '_PORT_O').ljust(var_len),
-                        ','.join(do_list)), file=out_fp)
+                        ' '.join(do_list)), file=out_fp)
 
             print(file=out_fp)
 
@@ -668,43 +728,44 @@ def print_group(group_dict: dict, out_fp):
                     print('{}set {} [get_ports {{{}}}]'.format(
                             ' ' * 4,
                             (sgname + '_' + var_name).ljust(var_len),
-                            ','.join(pin_list)), file=out_fp)
+                            ' '.join(pin_list)), file=out_fp)
                 print(file=out_fp)
 
 
 def debug_group_dict(group_dict: dict, status: str):
     print()
-    # print(f'Group({status}): {{')
-    # for gname, gdata in group_dict.items():
-    #     if gname == 'unknown':
-    #         print(f'  {gname}: [')
-    #         for pin in gdata:
-    #             print(f'    {pin},')
-    #         print(f'  ],')
-    #     elif gname == 'ignore':
-    #         print(f'  {gname}: {{')
-    #         for sgname, repat in gdata.items():
-    #             print(f'    {sgname}: {repat},')
-    #         print(f'  }},')
-    #     else:
-    #         print(f'  {gname}: {{')
-    #         print(f'    repat:     {gdata.repat}')
-    #         print(f'    sub_name:  {gdata.sub_name}')
-    #         print(f'    clk_repat: {gdata.clk_repat}')
-    #         print(f'    cus_pin:   {gdata.cus_pin}')
-    #         for sgname, sgdata in gdata.sub_group.items():
-    #             print(f'    {sgname}: {{')
-    #             print(f'      data_pin: [')
-    #             for pin in sgdata.data_pin:
-    #                 print(f'        {pin},')
-    #             print(f'      ],')
-    #             print(f'      clk_pin: [')
-    #             for pin in sgdata.clk_pin:
-    #                 print(f'        {pin},')
-    #             print(f'      ],')
-    #             print(f'    }},')
-    #         print(f'  }},')
-    # print('}\n')
+    print(f'Group({status}): {{')
+    for gname, gdata in group_dict.items():
+        if gname == 'unknown':
+            print(f'  {gname}: [')
+            for pin in gdata:
+                print(f'    {pin},')
+            print(f'  ],')
+        elif gname == 'ignore':
+            print(f'  {gname}: {{')
+            for sgname, repat in gdata.items():
+                print(f'    {sgname}: {repat},')
+            print(f'  }},')
+        else:
+            print(f'  {gname}: {{')
+            print(f'    title:     {gdata.title}')
+            print(f'    sgname:    {gdata.sgname}')
+            print(f'    sgorder:   {gdata.sgorder}')
+            print(f'    clock:     {gdata.clock}')
+            print(f'    custom:    {gdata.custom}')
+            for sgname, sgdata in gdata.sgroup.items():
+                print(f'    {sgname}: {{')
+                print(f'      data_pin: [')
+                for pin in sgdata.dpin:
+                    print(f'        {pin},')
+                print(f'      ],')
+                print(f'      clk_pin: [')
+                for pin in sgdata.cpin:
+                    print(f'        {pin},')
+                print(f'      ],')
+                print(f'    }},')
+            print(f'  }},')
+    print('}\n')
 
 
 ##############################################################################
