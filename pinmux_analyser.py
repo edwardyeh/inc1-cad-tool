@@ -606,10 +606,10 @@ def print_group(group_dict: dict, out_fp):
                     gdata.sgorder.order.append(sgname)
                     msg += f'{sgname}, '
             except Exception as e:
-                print(f'Incorrect sub-group reorder pattern, use the original order. ({gdata.sgorder.pattern})\n')
+                print(f'Error: incorrect sub-group reorder pattern, use the original order. ({gdata.sgorder})\n')
                 traceback.print_exc()
                 gdata.sgorder = None
-                for sgname in gdata.sgroupkeys():
+                for sgname in gdata.sgroup.keys():
                     msg += f'{sgname}, '
         else:
             for sgname in gdata.sgroup.keys():
