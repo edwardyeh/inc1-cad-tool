@@ -238,7 +238,8 @@ class PartGroupDict:
 ### Procedure
 
 
-def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
+def parse_table(config: dict, workbook: Workbook, is_debug: bool=False,
+                is_dump_part: bool=False) -> dict:
     """Parsing the pinmux table"""
     ws = workbook[config['table_format']['active_tab']]
 
@@ -349,16 +350,18 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
     pad_part_dict = {}
     config_ignore = config['table_format']['ignore']
 
-    for ridx in range(1, ws.max_row+1):
+    read_cell_str = lambda ridx, cidx: str(ws.cell(ridx, cidx).value).replace('\n', ' ').strip()
+
+    for ridx in range(config['table_format']['function']['rid'], ws.max_row+1):
         # row hidden ignore check
         if ws.row_dimensions[ridx].hidden and not config_ignore['hide_row']:
             continue
 
         # get function name
-        if pad_repat.fullmatch(str(ws.cell(ridx, pad_cidx).value)):
+        if pad_repat.fullmatch(read_cell_str(ridx, pad_cidx)):
             func_name_dict = {}
             for _, func_cidx in func_cidx_list:
-                func_name_dict[func_cidx] = str(ws.cell(ridx, func_cidx).value).replace('\n', ' ').strip()
+                func_name_dict[func_cidx] = read_cell_str(ridx, func_cidx)
             continue
 
         for dir_cidx, func_cidx in func_cidx_list:
@@ -382,15 +385,15 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
                     continue
 
             # ignore function check
-            func_name = str(ws.cell(ridx, func_cidx).value).strip()
-            ref_name = str(ws.cell(ridx, ref_cidx).value).strip()
+            func_name = read_cell_str(ridx, func_cidx)
+            ref_name = read_cell_str(ridx, ref_cidx)
             match config['table_format']['pad_name']['style']:
                 case 'upper':
-                    pad_name = str(ws.cell(ridx, pad_cidx).value).upper()
+                    pad_name = read_cell_str(ridx, pad_cidx).upper()
                 case 'lower':
-                    pad_name = str(ws.cell(ridx, pad_cidx).value).lower()
+                    pad_name = read_cell_str(ridx, pad_cidx).lower()
                 case 'origin':
-                    pad_name = str(ws.cell(ridx, pad_cidx).value)
+                    pad_name = read_cell_str(ridx, pad_cidx)
 
             is_ignore = False
             for gname, repat in ignore_dict.items():
@@ -500,7 +503,7 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
         for pname, pdata in part_dict.items():
             debug_group_dict(pdata.group, f'update, {pname}')
 
-    if len(pad_part_dict) > 0:
+    if is_dump_part and len(pad_part_dict) > 0:
         print()
         for pad_name, part_set in pad_part_dict.items():
             if len(part_set) > 1:
@@ -803,8 +806,10 @@ def main():
         print(e)
         exit(1)
 
+    is_dump_part = args.out_fp is not None and args.is_dump_part
     wb = openpyxl.load_workbook(args.table_fp)
-    group_dict, part_dict = parse_table(config, wb, is_debug=args.is_debug)
+    group_dict, part_dict = parse_table(config, wb, is_debug=args.is_debug, 
+                                        is_dump_part=is_dump_part)
 
     if args.out_fp is None:
         print_group(group_dict, sys.stdout)

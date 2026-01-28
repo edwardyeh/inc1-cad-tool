@@ -3,6 +3,7 @@
 
     SDIO: SDIO, SDIO2
     BMC:  BMC
+    JTAG: JTAG
 
 === Parsing Ignore:
 
@@ -20,10 +21,10 @@
     [D] SDIO_D3(BS)  IO MC18 (NVT TSIO)
 
     set SDIO_PADCLK_O [get_ports {MC13}]
-    set SDIO_PORT_I   [get_ports {MC14,MC17,MC18}]
-    set SDIO_PORT_O   [get_ports {MC14,MC17,MC18}]
+    set SDIO_PORT_I   [get_ports {MC14 MC17 MC18}]
+    set SDIO_PORT_O   [get_ports {MC14 MC17 MC18}]
 
-    set SDIO_DATA_H [get_ports {MC15,MC16}]
+    set SDIO_DATA_H [get_ports {MC15 MC16}]
 
 - SDIO2:
 
@@ -35,10 +36,10 @@
     [D] SDIO2_D3  IO MC24 (NVT TSIO)
 
     set SDIO2_PADCLK_O [get_ports {MC19}]
-    set SDIO2_PORT_I   [get_ports {MC20,MC23,MC24}]
-    set SDIO2_PORT_O   [get_ports {MC20,MC23,MC24}]
+    set SDIO2_PORT_I   [get_ports {MC20 MC23 MC24}]
+    set SDIO2_PORT_O   [get_ports {MC20 MC23 MC24}]
 
-    set SDIO2_DATA_H [get_ports {MC21,MC22}]
+    set SDIO2_DATA_H [get_ports {MC21 MC22}]
 
 - BMC:
 
@@ -49,5 +50,16 @@
 
     set BMC_PADCLK_O [get_ports {MC19}]
     set BMC_PORT_I   [get_ports {MC21}]
-    set BMC_PORT_O   [get_ports {MC20,MC22}]
+    set BMC_PORT_O   [get_ports {MC20 MC22}]
+
+- JTAG:
+
+    [C] JTAG_TCK I  DGPIO1 (PAD TYPE2)
+    [D] JTAG_TMS IO DGPIO2 (PAD TYPE2)
+    [D] JTAG_TDI I  DGPIO3 (PAD TYPE2)
+    [D] JTAG_TDO O  DGPIO4 (PAD TYPE2)
+
+    set JTAG_PADCLK_I [get_ports {DGPIO1}]
+    set JTAG_PORT_I   [get_ports {DGPIO2 DGPIO3}]
+    set JTAG_PORT_O   [get_ports {DGPIO2 DGPIO4}]
 

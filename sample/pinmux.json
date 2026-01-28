@@ -1,5 +1,4 @@
 {
-    "hide_row_parse": false,
     "table_format": 
     {
         "active_tab": "Pinmux",
@@ -12,33 +11,42 @@
         "pad_name": 
         {
             "rid": 4,
-            "pattern": "Pad Name"
+            "pattern": "Pad Name",
+            "style": "upper"
         },
         "ref_name": 
         {
             "rid": 4,
             "pattern": "Pad Cell Name"
+        },
+        "ignore":
+        {
+            "hide_row": true,
+            "font_strike": true,
+            "font_color_rgb": "ffffffff",
+            "font_color_index": 0,
+            "font_color_theme": 0
         }
     },
     "function": 
     {
         "SDIO": 
         {
-            "subgroup": [ {"pattern": "SDIO(\\d*)_.+", "name": "SDIO\\1"} ],
-            "clock":    [ "SDIO\\d*_CLK.*" ],
-            "custom":   { "DATA_H": "SDIO\\d*_D(?:0|1).*" }
+            "sgroup": [ {"pat": "SDIO(\\d*)_.+", "rep": "SDIO\\1"} ],
+            "clock":  [ "SDIO\\d*_CLK.*" ],
+            "custom": { "DATA_H": "SDIO\\d*_D(?:0|1).*" }
         },
         "BMC":
         {
-            "subgroup": [ {"pattern": "BMC_\\w+", "name": "BMC"} ],
-            "clock":    [ "\\w+_CLK" ],
-            "custom":   {}
+            "sgroup": [ {"pat": "BMC_\\w+", "rep": "BMC"} ],
+            "clock":  [ "\\w+_CLK" ],
+            "custom": {}
         },
         "JTAG":
         {
-            "subgroup": [ {"pattern": "JTAG_\\w+", "name": "JTAG"} ],
-            "clock":    [ "\\w+_TCK" ],
-            "custom":   {}
+            "sgroup": [ {"pat": "JTAG_\\w+", "rep": "JTAG"} ],
+            "clock":  [ "\\w+_TCK" ],
+            "custom": {}
         }
     },
     "ignore":
