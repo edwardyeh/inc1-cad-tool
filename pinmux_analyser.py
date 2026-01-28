@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # SPDX-License-Identifier: GPL-2.0-only
 #
-# Pinmux Table Analysis for the iVot project
+# Pinmux Table Analyser for the iVot project
 #
 # Copyright (C) 2025 Yeh, Hsin-Hsien <yhh76227@gmail.com>
 #
@@ -13,9 +13,11 @@ import math
 import openpyxl
 import re
 import sys
+import traceback
 from collections import defaultdict
 from dataclasses import dataclass, field
 from jsonschema import validate, ValidationError
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import column_index_from_string
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
@@ -30,13 +32,12 @@ CONFIG_SCHEMA = {
     '$schema': 'https://json-schema.org/draft/2020-12/schema',
     'type': 'object',
     'additionalProperties': False,
-    'required': ['hide_row_parse', 'table_format', 'function', 'ignore', 'partition'],
+    'required': ['table_format', 'function', 'ignore', 'partition'],
     'properties': {
-        'hide_row_parse': {'type': 'boolean'},
         'table_format': {
             'type': 'object',
             'additionalProperties': False,
-            'required': ['active_tab', 'function', 'pad_name', 'ref_name'],
+            'required': ['active_tab', 'function', 'pad_name', 'ref_name', 'ignore'],
             'properties': {
                 'active_tab': {'type': 'string'},
                 'function': {
@@ -72,6 +73,19 @@ CONFIG_SCHEMA = {
                         'rid': {'type': 'integer'},
                         'pattern': {'type': 'string'}
                     }
+                },
+                'ignore': {
+                    'type': 'object',
+                    'additionalProperties': False,
+                    'required': ['hide_row', 'font_strike'],
+                    'patternProperties': {
+                        'hide_row': {'type': 'boolean'},
+                        'font_strike': {'type': 'boolean'},
+                        'font_color_rgb': {'type': 'string'},
+                        'font_color_index': {'type': 'integer'},
+                        'font_color_theme': {'type': 'integer'},
+                        r'_\S+': {}
+                    }
                 }
             }
         },
@@ -82,17 +96,46 @@ CONFIG_SCHEMA = {
                 r'\S+': {
                     'type': 'object',
                     'additionalProperties': False,
-                    'required': ['subgroup', 'clock', 'custom'],
-                    'properties': {
-                        'subgroup': {
+                    'patternProperties': {
+                        'title': {
+                            'type': 'array',
+                            'items': {'type': 'string'}
+                        },
+                        'sgroup': {
                             'type': 'array',
                             'items': {
                                 'type': 'object',
                                 'additionalProperties': False,
-                                'required': ['pattern', 'name'],
+                                'required': ['pat', 'rep'],
                                 'properties': {
-                                    'pattern': {'type': 'string'},
-                                    'name': {'type': 'string'}
+                                    'pat': {'type': 'string'},
+                                    'rep': {'type': 'string'},
+                                    'ref': {
+                                        'type': 'array',
+                                        'items': {
+                                            'type': 'object',
+                                            'additionalProperties': False,
+                                            'properties': {
+                                                'type': 'object'
+                                                'additionalProperties': False,
+                                                'properties': {
+                                                    'p': {'type': 'string'},
+                                                    'r': {'type': 'string'}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        'sgorder': {
+                            'type': 'object',
+                            'additionalProperties': False,
+                            'properties': {
+                                'pat': {'type': 'string'},
+                                'order': {
+                                    'type': 'array',
+                                    'items': {'type': 'integer'}
                                 }
                             }
                         },
@@ -106,7 +149,8 @@ CONFIG_SCHEMA = {
                             'patternProperties': {
                                 r'\S+': {'type': 'string'}
                             }
-                        }
+                        },
+                        r'_\S+': {}
                     }
                 }
             }
@@ -142,34 +186,48 @@ DIR_TAG = set(list(DIR_I_TAG) + list(DIR_O_TAG))
 
 @dataclass
 class Pin:
-    func: str
-    dir:  str
-    pad:  str
-    ref:  str
+    func:   str
+    dir:    str
+    pad:    str
+    ref:    str
 
 
 @dataclass
-class SubGroup:
-    pin_list: list[Pin] = field(default_factory=list)
-    data_pin: list[Pin] = field(default_factory=list)
-    clk_pin:  list[Pin] = field(default_factory=list)
+class SGName:
+    pat:    re.Pattern
+    rep:    str
+    ref:    list[dict] = field(default_factory=list) 
+
+
+@dataclass
+class SGOrder:
+    pat:    re.Pattern
+    order:  list[int|str] = field(default_factory=list) 
+
+
+@dataclass
+class SGroup:
+    plist:  list[Pin] = field(default_factory=list)
+    dpin:   list[Pin] = field(default_factory=list)
+    cpin:   list[Pin] = field(default_factory=list)
 
 
 @dataclass
 class GroupData:
-    repat:     list[re.Pattern]      = field(default_factory=list)
-    sub_name:  list[str]             = field(default_factory=list)
-    clk_repat: list[re.Pattern]      = field(default_factory=list)
-    cus_pin:   dict[re.Pattern]      = field(default_factory=dict)
-    sub_group: defaultdict[SubGroup] = field(init=False)
+    title:      list[re.Pattern]    = field(default_factory=list)
+    sgname:     list[SGName]        = field(default_factory=list)
+    sgorder:    SGOrder             = None
+    clock:      list[re.Pattern]    = field(default_factory=list)
+    custom:     dict[re.Pattern]    = field(default_factory=dict)
+    sgroup:     defaultdict[SGroup] = field(init=False)
     def __post_init__(self):
-        self.sub_group = defaultdict(SubGroup)
+        self.sgroup = defaultdict(SGroup)
 
 
 @dataclass
 class PartGroupDict:
-    repat: list[re.Pattern]       = field(default_factory=list)
-    group: defaultdict[GroupData] = field(init=False)
+    pat:    list[re.Pattern]       = field(default_factory=list)
+    group:  defaultdict[GroupData] = field(init=False)
     def __post_init__(self):
         self.group = defaultdict(GroupData)
 
@@ -183,15 +241,15 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
     ws = workbook[config['table_format']['active_tab']]
 
     ### Get table format
-    re_pat_list = []
+    repat_list = []
     for pat in config['table_format']['function']['pattern']:
-        re_pat_list.append(re.compile(pat))
+        repat_list.append(re.compile(pat))
 
-    crange_sz = len(config['table_format']['function']['crange'])
+    len_crange = len(config['table_format']['function']['crange'])
     cidx_st, cidx_ed = 1, math.inf 
-    if crange_sz >= 1:
+    if len_crange >= 1:
         cidx_st = column_index_from_string(config['table_format']['function']['crange'][0])
-    if crange_sz >= 2:
+    if len_crange >= 2:
         cidx_ed = column_index_from_string(config['table_format']['function']['crange'][1])
 
     func_cidx_list = []
@@ -200,25 +258,25 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
             continue
         if i > cidx_ed:
             break
-        for re_pat in re_pat_list:
-            if re_pat.fullmatch(str(cell.value)):
+        for repat in repat_list:
+            if repat.fullmatch(str(cell.value)):
                 func_cidx_list.append(i)
                 break
     func_cidx_list = [(x-1, x) for x in func_cidx_list]
 
-    re_pat = re.compile(config['table_format']['pad_name']['pattern'])
+    pad_repat = re.compile(config['table_format']['pad_name']['pattern'])
     pad_cidx = None
     for i, cell in enumerate(ws[config['table_format']['pad_name']['rid']], start=1):
         value = str(cell.value).replace('\n', ' ').strip()
-        if re_pat.fullmatch(value):
+        if pad_repat.fullmatch(value):
             pad_cidx = i
             break
 
-    re_pat = re.compile(config['table_format']['ref_name']['pattern'])
+    repat = re.compile(config['table_format']['ref_name']['pattern'])
     ref_cidx = None
     for i, cell in enumerate(ws[config['table_format']['ref_name']['rid']], start=1):
         value = str(cell.value).replace('\n', ' ').strip()
-        if re_pat.fullmatch(value):
+        if repat.fullmatch(value):
             ref_cidx = i
             break
 
@@ -243,13 +301,26 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
     group_dict = defaultdict(GroupData)
     for gname, gconfig in config['function'].items():
         gdata = group_dict[gname]
-        for sgroup in gconfig['subgroup']:
-            gdata.repat.append(re.compile(sgroup['pattern']))
-            gdata.sub_name.append(sgroup['name'])
-        for pat in gconfig['clock']:
-            gdata.clk_repat.append(re.compile(pat))
-        for name, pat in gconfig['custom'].items():
-            gdata.cus_pin[name] = re.compile(pat)
+        if 'title' in gconfig:
+            for pat in gconfig['title']:
+                gdata.title.append(re.compile(pat))
+        if 'sgroup' in gconfig:
+            for sgroup in gconfig['sgroup']:
+                sgname = SGName(pat=re.compile(sgroup['pat']), rep=sgroup['rep'])
+                if 'ref' in sgroup:
+                    for refine_pat in sgroup['ref']:
+                        sgname.ref.append({'p': re.compile(refine_pat['p']), 
+                                           'r': refine_pat['r']})
+                gdata.sgname.append(sgname)
+        if 'sgorder' in gconfig:
+            gdata.sgorder = SGOrder(pat=re.compile(gconfig['sgorder']['pat']),
+                                    order=copy.copy(gconfig['sgorder']['order']))
+        if 'clock' in gconfig:
+            for pat in gconfig['clock']:
+                gdata.clock.append(re.compile(pat))
+        if 'custom' in gconfig:
+            for name, pat in gconfig['custom'].items():
+                gdata.custom[name] = re.compile(pat)
 
     if is_debug:
         debug_group_dict(group_dict, 'initial')
@@ -257,7 +328,7 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
     ### Get partition group format
     part_dict = defaultdict(PartGroupDict)
     for pname, pat_list in config['partition'].items():
-        part_dict[pname].repat = [re.compile(x) for x in pat_list]
+        part_dict[pname].pat = [re.compile(x) for x in pat_list]
         part_dict[pname].group['unknown'] = []
         part_dict[pname].group['ignore'] = copy.deepcopy(ignore_dict)
 
@@ -267,16 +338,40 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
         print()
 
     ### Parsing table
+    func_name_dict = {}
+    config_ignore = config['table_format']['ignore']
+
     for ridx in range(1, ws.max_row+1):
-        # row hidden check
-        if ws.row_dimensions[ridx].hidden and not config['hide_row_parse']:
-            print('check')
+        # row hidden ignore check
+        if ws.row_dimensions[ridx].hidden and not config_ignore['hide_row']:
+            continue
+
+        # get function name
+        if pad_repat.fullmatch(str(ws.cell(ridx, pad_cidx).value)):
+            func_name_dict = {}
+            for _, func_cidx in func_cidx_list:
+                func_name_dict[func_cidx] = str(ws.cell(ridx, func_cidx).value)
             continue
 
         for dir_cidx, func_cidx in func_cidx_list:
-            # cell strike check
-            if ws.cell(ridx, dir_cidx).font.strike == True:
+            # font strike ignore check
+            if ws.cell(ridx, dir_cidx).font.strike and config_ignore['font_strike']:
                 continue
+            if ws.cell(ridx, func_cidx).font.strike and config_ignore['font_strike']:
+                continue
+
+            # font color ignore check
+            fcolor = ws.cell(ridx, func_cidx).font.color
+            if fcolor is not None:
+                if ('font_color_rgb' in config_ignore and fcolor.type == 'rgb'
+                    and fcolor.rgb.lower() == config_ignore['font_color_rgb'].lower()):
+                    continue
+                if ('font_color_index' in config_ignore and fcolor.type == 'indexed' 
+                    and fcolor.indexed == config_ignore['font_color_index']):
+                    continue
+                if ('font_color_theme' in config_ignore and fcolor.type = 'theme' 
+                    and fcolor.theme == config_ignore['font_color_theme']):
+                    continue
 
             # ignore function check
             func_name = str(ws.cell(ridx, func_cidx).value)
@@ -290,7 +385,7 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
                     break
             if is_ignore:
                 for pdata in part_dict.values():
-                    for repat in pdata.repat:
+                    for repat in pdata.pat:
                         if repat.fullmatch(pad):
                             pdata.group['ignore'][gname]['active'] = True
                 continue
@@ -310,51 +405,73 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False) -> dict:
 
                 is_unknown = True
                 for gname, gdata in group_dict.items():
-                    for pid, repat in enumerate(gdata.repat):
-                        if (m := repat.fullmatch(pin_data.func)):
+                    # active title check
+                    if len(gdata.title) > 0:
+                        title_hit = False
+                        for repat in gdata.title:
+                            if repat.fullmatch(func_name_dict[func_cidx]):
+                                title_hit = True
+                                break
+                        if not title_hit:
+                            continue
+
+                    # is active sub-group pattern existed?
+                    if len(gdata.sgname) == 0:
+                        continue
+
+                    for sgname in gdata.sgname:
+                        if (m := sgname.pat.fullmatch(pin_data.func)):
                             is_clk, is_unknown = False, False
-                            for clk_repat in gdata.clk_repat:
-                                if clk_repat.fullmatch(pin_data.func):
+                            for repat in gdata.clock:
+                                if repat.fullmatch(pin_data.func):
                                     is_clk = True
                                     break
 
-                            # add to the top dictionary
-                            sgname = repat.sub(gdata.sub_name[pid], pin_data.func)
-                            sgdata = gdata.sub_group[sgname]
-                            sgdata.pin_list.append(pin_data)
+                            # add to the group dictionary
+                            sgname = sgname.pat.sub(sgname.rep, pin_data.func)
+                            for refine_pat in sgname.ref:
+                                sgname = refine_pat['p'].sub(refine_pat['r'], sgname)
+                            sgdata = gdata.sgroup[sgname]
+                            sgdata.plist.append(pin_data)
                             if is_clk:
-                                sgdata.clk_pin.append(pin_data)
+                                sgdata.cpin.append(pin_data)
                             else:
-                                sgdata.data_pin.append(pin_data)
+                                sgdata.dpin.append(pin_data)
 
                             # check and add to the partition dictionary
                             is_check_done = False
                             for pdata in part_dict.values():
-                                for repat in pdata.repat:
+                                for repat in pdata.pat:
                                     if repat.fullmatch(pin_data.pad):
                                         is_check_done = True
                                         pgdata = pdata.group[gname]
-                                        if len(pgdata.sub_group) == 0:
-                                            pgdata.cus_pin = gdata.cus_pin
-                                        psgdata = pgdata.sub_group[sgname]
-                                        psgdata.pin_list.append(pin_data)
+                                        if len(pgdata.sgroup) == 0:
+                                            pgdata.custom = gdata.custom
+                                        psgdata = pgdata.sgroup[sgname]
+                                        psgdata.plist.append(pin_data)
                                         if is_clk:
-                                            psgdata.clk_pin.append(pin_data)
+                                            psgdata.cpin.append(pin_data)
                                         else:
-                                            psgdata.data_pin.append(pin_data)
+                                            psgdata.dpin.append(pin_data)
                                         break
                                 if is_check_done:
                                     break
 
+                        if not is_unknown:
+                            break
+                    if not is_unknown:
+                        break
+
                 if is_unknown:
                     unknown_list.append(pin_data)
                     for pdata in part_dict.values():
-                        for repat in pdata.repat:
+                        for repat in pdata.pat:
                             if repat.fullmatch(pin_data.pad):
                                 pdata.group['unknown'].append(pin_data)
 
     group_dict['unknown'] = unknown_list
     group_dict['ignore'] = ignore_dict
+
     if is_debug:
         debug_group_dict(group_dict, 'update')
         for pname, pdata in part_dict.items():
@@ -408,9 +525,36 @@ def print_group(group_dict: dict, out_fp):
         if gname in {'unknown', 'ignore'}:
             continue
         print(f'    {gname}: '.ljust(gname_len), end='', file=out_fp)
+
+        # sub-group reorder
         msg = ''
-        for sgname in gdata.sub_group.keys():
-            msg += f'{sgname}, '
+        if gdata.sgorder is not None:
+            try:
+                order_list = []
+                for sgname in gdata.sgroup.keys():
+                    toks = [sgname]
+                    m = gdata.sgorder.pat.fullmatch(sgname)
+                    for i in gdata.sgorder.order:
+                        if m[i] == '':
+                            toks.append(0)
+                        else:
+                            toks.append(int(m[i]))
+                order_list.append(toks)
+
+                gdata.sgorder.order = []
+                for sgname, *_ in sorted(order_list, key=lambda x: x[1:]):
+                    gdata.sgorder.order.append(sgname)
+                    msg += f'{sgname}, '
+            except Exception as e:
+                print(f'Incorrect sub-group reorder pattern, use the original order. ({gdata.sub_order.pattern})\n')
+                traceback.print_exc()
+                gdata.sgorder = None
+                for sgname in gdata.sub_group.keys():
+                    msg += f'{sgname}, '
+        else:
+            for sgname in gdata.sub_group.keys():
+                msg += f'{sgname}, '
+
         print(msg[:-2], file=out_fp)
 
     if len(group_dict['unknown']):
@@ -435,14 +579,20 @@ def print_group(group_dict: dict, out_fp):
         if gname in {'unknown', 'ignore'}:
             continue
 
-        for sgname, sgdata in gdata.sub_group.items():
-            if len(sgdata.pin_list) == 0:
+        # sub-group reorder
+        if gdata.sgorder is not None:
+            group_list = [(x, gdata.sgroup[x]) for x in gdata.sgorder.order]
+        else:
+            group_list = tuple(gdata.sgroup.items())
+
+        for sgname, sgdata in group_list:
+            if len(sgdata.plist) == 0:
                 continue
             print(f'- {sgname}:\n', file=out_fp)
 
             # print pin information
-            cpin_set = set([pin.func for pin in sgdata.clk_pin])
-            _print_pin(sgdata.pin_list, cpin_set=cpin_set, tabspace=4)
+            cpin_set = set([pin.func for pin in sgdata.cpin])
+            _print_pin(sgdata.plist, cpin_set=cpin_set, tabspace=4)
             print(file=out_fp)
 
             # print tool command
@@ -450,9 +600,9 @@ def print_group(group_dict: dict, out_fp):
             var_len = len(sgname) + 9
 
             ci_list, co_list = [], []
-            for pin in sgdata.clk_pin:
+            for pin in sgdata.cpin:
                 is_cus = False
-                for cus_name, cus_repat in gdata.cus_pin.items():
+                for cus_name, cus_repat in gdata.custom.items():
                     if cus_repat.fullmatch(pin.func):
                         cus_pin_dict[cus_name].append(pin.pad)
                         is_cus = True
@@ -478,9 +628,9 @@ def print_group(group_dict: dict, out_fp):
                         ','.join(co_list)), file=out_fp)
 
             di_list, do_list = [], []
-            for pin in sgdata.data_pin:
+            for pin in sgdata.dpin:
                 is_cus = False
-                for cus_name, cus_repat in gdata.cus_pin.items():
+                for cus_name, cus_repat in gdata.custom.items():
                     if cus_repat.fullmatch(pin.func):
                         cus_pin_dict[cus_name].append(pin.pad)
                         is_cus = True
@@ -524,37 +674,37 @@ def print_group(group_dict: dict, out_fp):
 
 def debug_group_dict(group_dict: dict, status: str):
     print()
-    print(f'Group({status}): {{')
-    for gname, gdata in group_dict.items():
-        if gname == 'unknown':
-            print(f'  {gname}: [')
-            for pin in gdata:
-                print(f'    {pin},')
-            print(f'  ],')
-        elif gname == 'ignore':
-            print(f'  {gname}: {{')
-            for sgname, repat in gdata.items():
-                print(f'    {sgname}: {repat},')
-            print(f'  }},')
-        else:
-            print(f'  {gname}: {{')
-            print(f'    repat:     {gdata.repat}')
-            print(f'    sub_name:  {gdata.sub_name}')
-            print(f'    clk_repat: {gdata.clk_repat}')
-            print(f'    cus_pin:   {gdata.cus_pin}')
-            for sgname, sgdata in gdata.sub_group.items():
-                print(f'    {sgname}: {{')
-                print(f'      data_pin: [')
-                for pin in sgdata.data_pin:
-                    print(f'        {pin},')
-                print(f'      ],')
-                print(f'      clk_pin: [')
-                for pin in sgdata.clk_pin:
-                    print(f'        {pin},')
-                print(f'      ],')
-                print(f'    }},')
-            print(f'  }},')
-    print('}\n')
+    # print(f'Group({status}): {{')
+    # for gname, gdata in group_dict.items():
+    #     if gname == 'unknown':
+    #         print(f'  {gname}: [')
+    #         for pin in gdata:
+    #             print(f'    {pin},')
+    #         print(f'  ],')
+    #     elif gname == 'ignore':
+    #         print(f'  {gname}: {{')
+    #         for sgname, repat in gdata.items():
+    #             print(f'    {sgname}: {repat},')
+    #         print(f'  }},')
+    #     else:
+    #         print(f'  {gname}: {{')
+    #         print(f'    repat:     {gdata.repat}')
+    #         print(f'    sub_name:  {gdata.sub_name}')
+    #         print(f'    clk_repat: {gdata.clk_repat}')
+    #         print(f'    cus_pin:   {gdata.cus_pin}')
+    #         for sgname, sgdata in gdata.sub_group.items():
+    #             print(f'    {sgname}: {{')
+    #             print(f'      data_pin: [')
+    #             for pin in sgdata.data_pin:
+    #                 print(f'        {pin},')
+    #             print(f'      ],')
+    #             print(f'      clk_pin: [')
+    #             for pin in sgdata.clk_pin:
+    #                 print(f'        {pin},')
+    #             print(f'      ],')
+    #             print(f'    }},')
+    #         print(f'  }},')
+    # print('}\n')
 
 
 ##############################################################################
@@ -565,7 +715,7 @@ def create_argparse() -> argparse.ArgumentParser:
     """Create an argument parser."""
     parser = argparse.ArgumentParser(
                 formatter_class=argparse.RawTextHelpFormatter,
-                description='Pinmux Table Analysis for the iVot project')
+                description='Pinmux Table Analyser for the iVot project')
 
     parser.add_argument('conf_fp', help='Configuration file') 
     parser.add_argument('table_fp', help='File path of the pinmux table') 
