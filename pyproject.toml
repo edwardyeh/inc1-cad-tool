@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inc1-cad-tool"
+dynamic = ["version"]
+description = "CAD tool for Inc."
+readme = "README.md"
+requires-python = ">=3.10"
+
+authors = [
+  { name = "Edward Yeh" }
+]
+
+license = { text = "GPL-2.0" }
+
+#classifiers = [
+#    "Development Status :: 3 - Alpha",
+#    "Intended Audience :: Developers",
+#    "License :: OSI Approved :: MIT License",
+#    "Programming Language :: Python :: 3.10",
+#    "Programming Language :: Python :: 3.11",
+#    "Programming Language :: Python :: 3.12",
+#    "Topic :: Multimedia :: Graphics",
+#]
+
+dependencies = [
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "inc1_cad_tool.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.urls]
+"Homepage" = "https://github.com/edwardyeh/inc1-cad-tool.git"
+
