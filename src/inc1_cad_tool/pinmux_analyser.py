@@ -18,7 +18,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from jsonschema import validate, ValidationError
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-from openpyxl.utils import column_index_from_string
+from openpyxl.utils import column_index_from_string, get_column_letter
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 from pathlib import Path
@@ -186,11 +186,12 @@ DIR_TAG = set(list(DIR_I_TAG) + list(DIR_O_TAG))
 
 @dataclass
 class Pin:
-    func:   str
+    desc:   str
     dir:    str
     pad:    str
     ref:    str
     fname:  str
+    index:  str
     font:   openpyxl.styles.fonts.Font|None = None
 
 
@@ -411,12 +412,13 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False,
             # parsing content
             direction = ws.cell(ridx, dir_cidx).value
             if direction is not None and str(direction).upper() in DIR_TAG:
-                pin_data = Pin(func=func_name, 
+                pin_data = Pin(desc=func_name, 
                                dir=str(direction).upper(), 
                                pad=pad_name, 
                                ref=ref_name,
                                font=ws.cell(ridx, func_cidx).font,
-                               fname=func_name_dict[func_cidx])
+                               fname=func_name_dict[func_cidx],
+                               index=f'{get_column_letter(func_cidx)}{ridx}')
 
                 pad_all_set.add(pad_name)
                 
@@ -440,15 +442,15 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False,
                         continue
 
                     for sgname_gen in gdata.sgname:
-                        if (m := sgname_gen.pat.fullmatch(pin_data.func)):
+                        if (m := sgname_gen.pat.fullmatch(pin_data.desc)):
                             is_clk, is_unknown = False, False
                             for repat in gdata.clock:
-                                if repat.fullmatch(pin_data.func):
+                                if repat.fullmatch(pin_data.desc):
                                     is_clk = True
                                     break
 
                             # add to the group dictionary
-                            sgname = sgname_gen.pat.sub(sgname_gen.rep, pin_data.func)
+                            sgname = sgname_gen.pat.sub(sgname_gen.rep, pin_data.desc)
                             for refine_pat in sgname_gen.ref:
                                 sgname = refine_pat['p'].sub(refine_pat['r'], sgname)
                             sgdata = gdata.sgroup[sgname]
@@ -537,60 +539,91 @@ def print_group(group_dict: dict, out_fp):
 
     ### Sub function
     def _print_pin(pin_list: list, cpin_set: set|None=None, tabspace: int=0, is_known: bool=True):
-        func_len, pad_len, ref_len = 0, 0, 0
+        desc_len, pad_len, ref_len, func_len, idx_len = 5, 4, 7, 8, 5
         for pin in pin_list:
-            if (strlen := len(pin.func)) > func_len:
-                func_len = strlen
-            if (strlen := len(pin.pad)) > pad_len:
-                pad_len = strlen
-            if (strlen := len(pin.ref)) > ref_len:
-                ref_len = strlen
+            desc_len = max(desc_len, len(pin.desc))
+            pad_len = max(pad_len, len(pin.pad))
+            ref_len = max(ref_len, len(pin.ref))
+            func_len = max(func_len, len(pin.fname))
+
+        # Type, Function, Dir.
+        print('{}| {} | {} | {} | {} | {} |'.format(
+            ' ' * tabspace,
+            'Type'.ljust(5),
+            'Desc.'.ljust(desc_len),
+            'Dir.'.ljust(4),
+            'Port'.ljust(pad_len),
+            'PadCell'.ljust(ref_len)
+        ), end='', file=out_fp)
+
+        if is_known:
+            print(' {} |'.format('Index'.ljust(idx_len)), file=out_fp)
+        else:
+            print(' {} | {} |'.format('Function'.ljust(func_len), 'Index'.ljust(idx_len)), file=out_fp)
+
+        print('{}|-{}-|-{}-|-{}-|-{}-|-{}-|'.format(
+            ' ' * tabspace,
+            '-' * 5,
+            '-' * desc_len,
+            '-' * 4,
+            '-' * pad_len,
+            '-' * ref_len
+        ), end='', file=out_fp)
+
+        if is_known:
+            print('-{}-|'.format('-' * idx_len), file=out_fp)
+        else:
+            print('-{}-|-{}-|'.format('-' * func_len, '-' * idx_len), file=out_fp)
+
+        clk_val_list, dat_val_list = [], []
 
         for pin in pin_list:
             if cpin_set is None:
-                pin_type = ''
-            elif pin.func in cpin_set:
-                pin_type = '[C] '
+                pin_type = 'N/A'
+            elif pin.desc in cpin_set:
+                pin_type = 'Clock'
             else:
-                pin_type = '[D] '
+                pin_type = 'Data'
+
+            val_list = clk_val_list if pin_type == 'Clock' else dat_val_list
 
             if is_known:
-                print('{}{}{} {:2} {} ({})'.format(
-                        ' ' * tabspace,
-                        pin_type,
-                        pin.func.ljust(func_len), 
-                        pin.dir, 
-                        pin.pad.ljust(pad_len), 
-                        pin.ref.ljust(ref_len)), 
-                      file=out_fp)
+                val_list.append('{}| {} | {} | {} | {} | {} | {} |'.format(
+                                    ' ' * tabspace,
+                                    pin_type.ljust(5),
+                                    pin.desc.ljust(desc_len),
+                                    pin.dir.ljust(4),
+                                    pin.pad.ljust(pad_len),
+                                    pin.ref.ljust(ref_len),
+                                    pin.index.ljust(idx_len)))
             else:
-                print('{}{}{} {:2} {} ({})   {}'.format(
-                        ' ' * tabspace,
-                        pin_type,
-                        pin.func.ljust(func_len), 
-                        pin.dir, 
-                        pin.pad.ljust(pad_len), 
-                        pin.ref.ljust(ref_len),
-                        pin.fname), 
-                      file=out_fp)
+                val_list.append('{}| {} | {} | {} | {} | {} | {} | {} |'.format(
+                                    ' ' * tabspace,
+                                    pin_type.ljust(5),
+                                    pin.desc.ljust(desc_len),
+                                    pin.dir.ljust(4),
+                                    pin.pad.ljust(pad_len),
+                                    pin.ref.ljust(ref_len),
+                                    pin.fname.ljust(func_len),
+                                    pin.index.ljust(idx_len)))
 
-    ### Print group result
-    gname_len = 0
-    for gname in group_dict.keys():
-        if gname in {'unknown', 'ignore'}:
-            continue
-        if (new_len := len(gname)) > gname_len:
-            gname_len = new_len
-    gname_len += 6
+        for val_str in clk_val_list:
+            print(val_str, file=out_fp)
+        for val_str in dat_val_list:
+            print(val_str, file=out_fp)
 
-    print('\n=== Category:\n', file=out_fp)
+    ### Print category
+    table_dict, grp_len, func_len = {}, 5, 9
+
     for gname, gdata in group_dict.items():
         if gname in {'unknown', 'ignore'}:
             continue
-        print(f'    {gname}: '.ljust(gname_len), end='', file=out_fp)
+
+        table_dict[gname] = []
+        grp_len = max(grp_len, len(gname))
+        func_len_tmp = 0
 
         # sub-group reorder
-        msg = ''
         if gdata.sgorder is not None:
             try:
                 order_list = []
@@ -607,37 +640,52 @@ def print_group(group_dict: dict, out_fp):
                 gdata.sgorder.order = []
                 for sgname, *_ in sorted(order_list, key=lambda x: x[1:]):
                     gdata.sgorder.order.append(sgname)
-                    msg += f'{sgname}, '
+                    table_dict[gname].append(sgname)
+                    func_len_tmp += len(sgname)
             except Exception as e:
                 print(f'Error: incorrect sub-group reorder pattern, use the original order. ({gdata.sgorder})\n')
                 traceback.print_exc()
                 gdata.sgorder = None
                 for sgname in gdata.sgroup.keys():
-                    msg += f'{sgname}, '
+                    table_dict[gname].append(sgname)
+                    func_len_tmp += len(sgname)
         else:
             for sgname in gdata.sgroup.keys():
-                msg += f'{sgname}, '
+                table_dict[gname].append(sgname)
+                func_len_tmp += len(sgname)
 
-        print(msg[:-2], file=out_fp)
+        func_len = max(func_len, (func_len_tmp + len(table_dict[gname]) * 2))
 
+    print('\n# Category\n', file=out_fp)
+    print('{}| {} | {} |'.format(' ' * 4, 'Group'.ljust(grp_len), 'Functions'.ljust(func_len)), file=out_fp)
+    print('{}|-{}-|-{}-|'.format(' ' * 4, ('-' * grp_len), ('-' * func_len)), file=out_fp)
+    for gname, func_list in table_dict.items():
+        func_str = ', '.join(func_list)
+        print('{}| {} | {} |'.format(' ' * 4, gname.ljust(grp_len), func_str.ljust(func_len)), file=out_fp)
+
+    ### Print unknown functions
     if len(group_dict['unknown']):
-        print('\n=== Unknown Function:\n', file=out_fp)
-        # print the information of pins
+        print('\n# Unknown Function\n', file=out_fp)
         _print_pin(group_dict['unknown'], tabspace=4, is_known=False)
 
-    active_ignore_dict, sgname_len = {}, 0
+    ### Print ignore pattern
+    table_dict, func_len, pat_len = {}, 8, 7
+
     for sgname, repat in group_dict['ignore'].items():
         if repat['active']:
-            active_ignore_dict[sgname] = repat['repat']
-            if (new_len := len(sgname)) > sgname_len:
-                sgname_len = new_len
+            table_dict[sgname] = repat['repat']
+            func_len = max(func_len, len(sgname))
+            pat_len = max (pat_len, len(repat['repat'].pattern))
 
-    if len(active_ignore_dict):
-        print('\n=== Parsing Ignore:\n', file=out_fp)
-        for sgname, repat in active_ignore_dict.items():
-            print('    {}: pattern("{}")'.format(sgname, repat.pattern), file=out_fp)
+    if len(table_dict):
+        print('\n# Parsing Ignore\n', file=out_fp)
+        print('{}| {} | {} |'.format(' ' * 4, 'Function'.ljust(func_len), 'Pattern'.ljust(pat_len)), file=out_fp)
+        print('{}|-{}-|-{}-|'.format(' ' * 4, ('-' * func_len), ('-' * pat_len)), file=out_fp)
+        for fname, repat in table_dict.items():
+            print('{}| {} | {} |'.format(' ' * 4, fname.ljust(func_len), repat.pattern.ljust(pat_len)), file=out_fp)
 
-    print('\n=== Function:\n', file=out_fp)
+    ### Print function group
+    print('\n# Function\n', file=out_fp)
     for gname, gdata in group_dict.items():
         if gname in {'unknown', 'ignore'}:
             continue
@@ -651,10 +699,10 @@ def print_group(group_dict: dict, out_fp):
         for sgname, sgdata in group_list:
             if len(sgdata.plist) == 0:
                 continue
-            print(f'- {sgname}:\n', file=out_fp)
+            print(f'- {sgname}\n', file=out_fp)
 
             # print pin information
-            cpin_set = set([pin.func for pin in sgdata.cpin])
+            cpin_set = set([pin.desc for pin in sgdata.cpin])
             _print_pin(sgdata.plist, cpin_set=cpin_set, tabspace=4)
             print(file=out_fp)
 
@@ -666,7 +714,7 @@ def print_group(group_dict: dict, out_fp):
             for pin in sgdata.cpin:
                 is_cus = False
                 for cus_name, cus_repat in gdata.custom.items():
-                    if cus_repat.fullmatch(pin.func):
+                    if cus_repat.fullmatch(pin.desc):
                         cus_pin_dict[cus_name].append(pin.pad)
                         is_cus = True
                         break
@@ -694,7 +742,7 @@ def print_group(group_dict: dict, out_fp):
             for pin in sgdata.dpin:
                 is_cus = False
                 for cus_name, cus_repat in gdata.custom.items():
-                    if cus_repat.fullmatch(pin.func):
+                    if cus_repat.fullmatch(pin.desc):
                         cus_pin_dict[cus_name].append(pin.pad)
                         is_cus = True
                         break

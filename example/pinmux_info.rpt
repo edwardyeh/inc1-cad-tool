@@ -1,24 +1,37 @@
 
-=== Category:
+# Category
 
-    SDIO: SDIO, SDIO2
-    BMC:  BMC
-    JTAG: JTAG
+    | Group | Function      |
+    |-------|---------------|
+    | SDIO  | SDIO, SDIO2   |
+    | BMC   | BMC           |
+    | JTAG  | JTAG          |
 
-=== Parsing Ignore:
+# Unknown Function
 
-    FUNC: pattern("FUNC_\w+")
+    | Type  | Desc.       | Dir. | Port   | PadCell   | Function     | Index |
+    |-------|-------------|------|--------|-----------|--------------|-------|
+    | N/A   | FUNC_CLKI   | I    | PGPIO1 | PAD TYPE1 | New Function | E23   |
+    | N/A   | FUNC_CLKO   | O    | PGPIO2 | PAD TYPE1 | New Function | E24   |
+    | N/A   | FUNC_IN1    | I    | PGPIO3 | PAD TYPE1 | New Function | E25   |
+    | N/A   | FUNC_IN2    | I    | PGPIO4 | PAD TYPE1 | New Function | E26   |
+    | N/A   | FUNC_OUT1   | O    | PGPIO5 | PAD TYPE1 | New Function | E27   |
+    | N/A   | FUNC_OUT2   | O    | PGPIO6 | PAD TYPE1 | New Function | E28   |
+    | N/A   | FUNC_INOUT1 | IO   | PGPIO7 | PAD TYPE1 | New Function | E29   |
+    | N/A   | FUNC_INOUT2 | IO   | PGPIO8 | PAD TYPE1 | New Function | E30   |
 
-=== Function:
+# Function
 
-- SDIO:
+- SDIO
 
-    [C] SDIO_CLK(BS) O  MC13 (NVT TSIO)
-    [D] SDIO_CMD(BS) IO MC14 (NVT TSIO)
-    [D] SDIO_D0(BS)  IO MC15 (NVT TSIO)
-    [D] SDIO_D1(BS)  IO MC16 (NVT TSIO)
-    [D] SDIO_D2(BS)  IO MC17 (NVT TSIO)
-    [D] SDIO_D3(BS)  IO MC18 (NVT TSIO)
+    | Type  | Desc.        | Dir. | Port | PadCell  | Index |
+    |-------|--------------|------|------|----------|-------|
+    | Clock | SDIO_CLK(BS) | O    | MC13 | NVT TSIO | E6    |
+    | Data  | SDIO_CMD(BS) | IO   | MC14 | NVT TSIO | E7    |
+    | Data  | SDIO_D0(BS)  | IO   | MC15 | NVT TSIO | E8    |
+    | Data  | SDIO_D1(BS)  | IO   | MC16 | NVT TSIO | E9    |
+    | Data  | SDIO_D2(BS)  | IO   | MC17 | NVT TSIO | E10   |
+    | Data  | SDIO_D3(BS)  | IO   | MC18 | NVT TSIO | E11   |
 
     set SDIO_PADCLK_O [get_ports {MC13}]
     set SDIO_PORT_I   [get_ports {MC14 MC17 MC18}]
@@ -26,14 +39,16 @@
 
     set SDIO_DATA_H [get_ports {MC15 MC16}]
 
-- SDIO2:
+- SDIO2
 
-    [C] SDIO2_CLK O  MC19 (NVT TSIO)
-    [D] SDIO2_CMD IO MC20 (NVT TSIO)
-    [D] SDIO2_D0  IO MC21 (NVT TSIO)
-    [D] SDIO2_D1  IO MC22 (NVT TSIO)
-    [D] SDIO2_D2  IO MC23 (NVT TSIO)
-    [D] SDIO2_D3  IO MC24 (NVT TSIO)
+    | Type  | Desc.     | Dir. | Port | PadCell  | Index |
+    |-------|-----------|------|------|----------|-------|
+    | Clock | SDIO2_CLK | O    | MC19 | NVT TSIO | E12   |
+    | Data  | SDIO2_CMD | IO   | MC20 | NVT TSIO | E13   |
+    | Data  | SDIO2_D0  | IO   | MC21 | NVT TSIO | E14   |
+    | Data  | SDIO2_D1  | IO   | MC22 | NVT TSIO | E15   |
+    | Data  | SDIO2_D2  | IO   | MC23 | NVT TSIO | E16   |
+    | Data  | SDIO2_D3  | IO   | MC24 | NVT TSIO | E17   |
 
     set SDIO2_PADCLK_O [get_ports {MC19}]
     set SDIO2_PORT_I   [get_ports {MC20 MC23 MC24}]
@@ -41,23 +56,27 @@
 
     set SDIO2_DATA_H [get_ports {MC21 MC22}]
 
-- BMC:
+- BMC
 
-    [C] BMC_CLK O  MC19 (NVT TSIO)
-    [D] BMC_CS  O  MC20 (NVT TSIO)
-    [D] BMC_DI  I  MC21 (NVT TSIO)
-    [D] BMC_DO  O  MC22 (NVT TSIO)
+    | Type  | Desc.   | Dir. | Port | PadCell  | Index |
+    |-------|---------|------|------|----------|-------|
+    | Clock | BMC_CLK | O    | MC19 | NVT TSIO | I12   |
+    | Data  | BMC_CS  | O    | MC20 | NVT TSIO | I13   |
+    | Data  | BMC_DI  | I    | MC21 | NVT TSIO | I14   |
+    | Data  | BMC_DO  | O    | MC22 | NVT TSIO | I15   |
 
     set BMC_PADCLK_O [get_ports {MC19}]
     set BMC_PORT_I   [get_ports {MC21}]
     set BMC_PORT_O   [get_ports {MC20 MC22}]
 
-- JTAG:
+- JTAG
 
-    [C] JTAG_TCK I  DGPIO1 (PAD TYPE2)
-    [D] JTAG_TMS IO DGPIO2 (PAD TYPE2)
-    [D] JTAG_TDI I  DGPIO3 (PAD TYPE2)
-    [D] JTAG_TDO O  DGPIO4 (PAD TYPE2)
+    | Type  | Desc.    | Dir. | Port   | PadCell   | Index |
+    |-------|----------|------|--------|-----------|-------|
+    | Clock | JTAG_TCK | I    | DGPIO1 | PAD TYPE2 | E35   |
+    | Data  | JTAG_TMS | IO   | DGPIO2 | PAD TYPE2 | E36   |
+    | Data  | JTAG_TDI | I    | DGPIO3 | PAD TYPE2 | E37   |
+    | Data  | JTAG_TDO | O    | DGPIO4 | PAD TYPE2 | E38   |
 
     set JTAG_PADCLK_I [get_ports {DGPIO1}]
     set JTAG_PORT_I   [get_ports {DGPIO2 DGPIO3}]
