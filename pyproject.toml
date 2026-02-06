@@ -28,11 +28,17 @@ license = { text = "GPL-2.0" }
 dependencies = [
 ]
 
+[project.scripts]
+pinmux_analyser = "inc1_cad_tool.pinmux_analyser:main"
+
 [tool.setuptools.dynamic]
 version = {attr = "inc1_cad_tool.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+#"inc1_cad_tool" = ["example/*.json"]
 
 [project.urls]
 "Homepage" = "https://github.com/edwardyeh/inc1-cad-tool.git"
