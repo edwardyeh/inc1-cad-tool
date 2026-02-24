@@ -1,23 +1,22 @@
 
+# File Information
+
+    Filename:  /mnt/DATA_DISK/Workspace/10_Project/01_SW/00_Python/inc1-cad-tool/example/pinmux.xlsx
+    Sheetname: Pinmux
+    Scope:     Partition (top1)
+
 # Category
 
-    | Group | Function      |
+    | Group | Functions     |
     |-------|---------------|
     | SDIO  | SDIO, SDIO2   |
     | BMC   | BMC           |
 
-# Unknown Function
+# Parsing Ignore
 
-    | Type  | Desc.       | Dir. | Port   | PadCell   | Function     | Index |
-    |-------|-------------|------|--------|-----------|--------------|-------|
-    | N/A   | FUNC_CLKI   | I    | PGPIO1 | PAD TYPE1 | New Function | E23   |
-    | N/A   | FUNC_CLKO   | O    | PGPIO2 | PAD TYPE1 | New Function | E24   |
-    | N/A   | FUNC_IN1    | I    | PGPIO3 | PAD TYPE1 | New Function | E25   |
-    | N/A   | FUNC_IN2    | I    | PGPIO4 | PAD TYPE1 | New Function | E26   |
-    | N/A   | FUNC_OUT1   | O    | PGPIO5 | PAD TYPE1 | New Function | E27   |
-    | N/A   | FUNC_OUT2   | O    | PGPIO6 | PAD TYPE1 | New Function | E28   |
-    | N/A   | FUNC_INOUT1 | IO   | PGPIO7 | PAD TYPE1 | New Function | E29   |
-    | N/A   | FUNC_INOUT2 | IO   | PGPIO8 | PAD TYPE1 | New Function | E30   |
+    | Function | Pattern  |
+    |----------|----------|
+    | FUNC     | FUNC_\w+ |
 
 # Function
 

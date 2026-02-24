@@ -10,23 +10,22 @@ import argparse
 import copy
 import json
 import math
-import openpyxl
 import re
 import sys
 import traceback
 from collections import defaultdict
 from dataclasses import dataclass, field
-from jsonschema import validate, ValidationError
+from pathlib import Path
+
+import openpyxl
+from jsonschema import ValidationError, validate
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import column_index_from_string, get_column_letter
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
-from pathlib import Path
-
 
 ##############################################################################
 ### Global Variable
-
 
 CONFIG_SCHEMA = {
     '$schema': 'https://json-schema.org/draft/2020-12/schema',
@@ -183,7 +182,6 @@ DIR_TAG = set(list(DIR_I_TAG) + list(DIR_O_TAG))
 ##############################################################################
 ### Data Structure
 
-
 @dataclass
 class Pin:
     desc:   str
@@ -237,7 +235,6 @@ class PartGroupDict:
 
 ##############################################################################
 ### Procedure
-
 
 def parse_table(config: dict, workbook: Workbook, is_debug: bool=False,
                 is_dump_part: bool=False) -> dict:
@@ -534,7 +531,7 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False,
     return group_dict, part_dict
 
 
-def print_group(group_dict: dict, out_fp):
+def print_group(filename: str, sheetname: str, group_dict: dict, out_fp, scope: str|None=None):
     """Print the group result"""
 
     ### Sub function
@@ -655,6 +652,14 @@ def print_group(group_dict: dict, out_fp):
                 func_len_tmp += len(sgname)
 
         func_len = max(func_len, (func_len_tmp + len(table_dict[gname]) * 2))
+
+    print('\n# File Information\n', file=out_fp)
+    print('{}Filename:  {}'.format(' ' * 4, filename), file=out_fp)
+    print('{}Sheetname: {}'.format(' ' * 4, sheetname), file=out_fp)
+    if scope is None:
+        print('{}Scope:     Top'.format(' ' * 4), file=out_fp)
+    else:
+        print('{}Scope:     Partition ({})'.format(' ' * 4, scope), file=out_fp)
 
     print('\n# Category\n', file=out_fp)
     print('{}| {} | {} |'.format(' ' * 4, 'Group'.ljust(grp_len), 'Functions'.ljust(func_len)), file=out_fp)
@@ -822,7 +827,6 @@ def debug_group_dict(group_dict: dict, status: str):
 ##############################################################################
 ### Main
 
-
 def create_argparse() -> argparse.ArgumentParser:
     """Create an argument parser."""
     parser = argparse.ArgumentParser(
@@ -859,22 +863,25 @@ def main():
     group_dict, part_dict = parse_table(config, wb, is_debug=args.is_debug, 
                                         is_dump_part=is_dump_part)
 
+    filename = Path(args.table_fp).resolve()
+    sheetname = config['table_format']['active_tab']
+
     if args.out_fp is None:
-        print_group(group_dict, sys.stdout)
+        print_group(filename, sheetname, group_dict, sys.stdout)
     else:
         with open(args.out_fp, 'w', encoding='utf-8') as fp:
-            print_group(group_dict, fp)
+            print_group(filename, sheetname, group_dict, fp)
 
     if args.is_dump_part:
         for pname, pdata in part_dict.items():
             if args.out_fp is None:
-                print_group(group_dict, sys.stdout)
+                print_group(filename, sheetname, group_dict, sys.stdout, pname)
             else:
                 part_out_fp = Path(args.out_fp)
                 part_out_fp = part_out_fp.parent / \
                                 (part_out_fp.stem + f'_{pname}' + part_out_fp.suffix)
                 with open(part_out_fp, 'w', encoding='utf-8') as fp:
-                    print_group(pdata.group, fp)
+                    print_group(filename, sheetname, pdata.group, fp, pname)
 
 
 if __name__ == '__main__':
