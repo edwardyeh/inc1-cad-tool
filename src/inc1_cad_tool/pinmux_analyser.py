@@ -24,6 +24,11 @@ from openpyxl.utils import column_index_from_string, get_column_letter
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
+from inc1_cad_tool import __version__
+
+VERSION = f'{Path(__file__).stem} version {__version__}'
+
+
 ##############################################################################
 ### Global Variable
 
@@ -835,6 +840,7 @@ def create_argparse() -> argparse.ArgumentParser:
 
     parser.add_argument('conf_fp', help='Configuration file') 
     parser.add_argument('table_fp', help='File path of the pinmux table') 
+    parser.add_argument('-version', action='version', version=VERSION)
     parser.add_argument('-outfile', dest='out_fp', metavar='<file_path>', 
                             help='Set the output file path') 
     parser.add_argument('-dump_part', dest='is_dump_part', action='store_true', 
