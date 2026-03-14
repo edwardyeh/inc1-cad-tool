@@ -34,7 +34,7 @@
         {
             "sgroup": [ {"pat": "SDIO(\\d*)_.+", "rep": "SDIO\\1"} ],
             "clock":  [ "SDIO\\d*_CLK.*" ],
-            "custom": { "DATA_H": "SDIO\\d*_D(?:0|1).*" }
+            "custom": { "SDIO\\d*_D(?:0|1).*": "DATA_H" }
         },
         "BMC":
         {

@@ -200,6 +200,15 @@ class Pin:
 
 @dataclass
 class SGName:
+    """
+    Sub-Group naming parsing
+
+    Attributes
+    ----------
+    pat : Match pattern
+    rep : Replace pattern
+    ref : Sub-Group naming refine pattern (format: {'p': <match pattern>, 'r': <replace pattern>})
+    """ 
     pat:    re.Pattern
     rep:    str
     ref:    list[dict] = field(default_factory=list) 
@@ -207,12 +216,28 @@ class SGName:
 
 @dataclass
 class SGOrder:
+    """Sub-Group dump order rule"""
     pat:    re.Pattern
     order:  list[int|str] = field(default_factory=list) 
 
 
 @dataclass
+class SGCustom:
+    """
+    Sub-Group custom collection rule
+
+    Attributes
+    ----------
+    pat  : Compare pattern
+    name : Custom collection name
+    """
+    pat:    re.Pattern
+    name:   str
+
+
+@dataclass
 class SGroup:
+    """Sub-Group data collection"""
     plist:  list[Pin] = field(default_factory=list)
     dpin:   list[Pin] = field(default_factory=list)
     cpin:   list[Pin] = field(default_factory=list)
@@ -220,11 +245,12 @@ class SGroup:
 
 @dataclass
 class GroupData:
+    """Group data collection"""
     title:      list[re.Pattern]    = field(default_factory=list)
     sgname:     list[SGName]        = field(default_factory=list)
     sgorder:    SGOrder             = None
     clock:      list[re.Pattern]    = field(default_factory=list)
-    custom:     dict[re.Pattern]    = field(default_factory=dict)
+    custom:     dict[SGCustom]      = field(default_factory=dict)
     sgroup:     defaultdict[SGroup] = field(init=False)
     def __post_init__(self):
         self.sgroup = defaultdict(SGroup)
@@ -232,6 +258,7 @@ class GroupData:
 
 @dataclass
 class PartGroupDict:
+    """Partition group collection"""
     pat:    list[re.Pattern]       = field(default_factory=list)
     group:  defaultdict[GroupData] = field(init=False)
     def __post_init__(self):
@@ -327,8 +354,8 @@ def parse_table(config: dict, workbook: Workbook, is_debug: bool=False,
             for pat in gconfig['clock']:
                 gdata.clock.append(re.compile(pat))
         if 'custom' in gconfig:
-            for name, pat in gconfig['custom'].items():
-                gdata.custom[name] = re.compile(pat)
+            for pat, name in gconfig['custom'].items():
+                gdata.custom[pat] = SGCustom(pat=re.compile(pat), name=name)
 
     if is_debug:
         debug_group_dict(group_dict, 'initial')
@@ -723,9 +750,9 @@ def print_group(filename: str, sheetname: str, group_dict: dict, out_fp, scope: 
             ci_list, co_list = [], []
             for pin in sgdata.cpin:
                 is_cus = False
-                for cus_name, cus_repat in gdata.custom.items():
-                    if cus_repat.fullmatch(pin.desc):
-                        cus_pin_dict[cus_name].append(pin.pad)
+                for cus_rule in gdata.custom.values():
+                    if cus_rule.pat.fullmatch(pin.desc):
+                        cus_pin_dict[cus_rule.name].append(pin.pad)
                         is_cus = True
                         break
 
@@ -751,9 +778,9 @@ def print_group(filename: str, sheetname: str, group_dict: dict, out_fp, scope: 
             di_list, do_list = [], []
             for pin in sgdata.dpin:
                 is_cus = False
-                for cus_name, cus_repat in gdata.custom.items():
-                    if cus_repat.fullmatch(pin.desc):
-                        cus_pin_dict[cus_name].append(pin.pad)
+                for cus_rule in gdata.custom.values():
+                    if cus_rule.pat.fullmatch(pin.desc):
+                        cus_pin_dict[cus_rule.name].append(pin.pad)
                         is_cus = True
                         break
 
